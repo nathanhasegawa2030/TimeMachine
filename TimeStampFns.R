@@ -2,6 +2,7 @@
 # time conversion functions
 #=====================================================================
 
+###CONVERTS TIMES IN THE FORM OF HH:MM TO DECIMAL FROM 0 TO 24 REPRESENTING HOURS
 time2dectime <- function(time){
 	if(any(c("POSIXct","POSIXt")%in%class(time))){
 		# if we have POSIX input, make it a string to meet our (bad)
@@ -24,12 +25,16 @@ time2dectime <- function(time){
 	return(dectime)
 }
 
+###CONVERTS TIMES IN THE FORM OF HH:MM TO ANGLE IN RADIANS.
+###0 AND 360 ARE MIDNIGHT, 90 IS 6 AM, 180 IS NOON, ETC.
 time2angle <- function(time){
 	dectime <- time2dectime(time)
 	timeAngle <- (dectime%%24)*2*pi/24
 	return(timeAngle)
 }
 
+###CONVERTS TIMES IN THE FORM OF HH:MM TO X- AND Y- COORDINATES ON THE UNIT CIRCLE,
+###BASED ON THE ANGLE IN RADIANS.
 time2XY <- function(time){
 	a <- time2angle(time)
 	XYtime <- zapsmall(cbind(
@@ -39,10 +44,12 @@ time2XY <- function(time){
 	return(XYtime)
 }
 
+###I'M NOT SURE THIS ONE WORKS
 XY2dectime <- function(XYtime){
 	(atan2(XYtime[,1],XYtime[,2])%%(2*pi))*(24/(2*pi))
 }
 
+###CONVERTS (X,Y)-COORDINATE TIME TO AMPLITUDE (FINDS THE AMPLITUDE OF A COMPLEX NUMBER)
 XY2amp <- function(XYtime){
   (sqrt(XYtime[,1]**2 + XYtime[,2]**2))
 }
@@ -51,6 +58,7 @@ XY2amp <- function(XYtime){
 # Splitting & centering the expression data for each subject
 #=====================================================================
 
+###I DO NOT SEE THIS CALLED ANYWHERE
 recalibrateExprs <- function(exprMat,subjectIDs){
 	# exprMat is a genes * subjects matrix
 	# subjectIDs a vector of subject IDs
@@ -66,15 +74,18 @@ recalibrateExprs <- function(exprMat,subjectIDs){
 # FNS FOR MODELING X&Y CLOCK COORDS
 #=====================================================================
 
+###When we are doing ratio TM, we use expr = CPtrainRatioDat. When we are doing Z-score TM,
+###we use CPtrainZScoreDat.
+
 trainTimeStamp <- function(expr,subjIDs,times,trainFrac=0.5,a=NULL,s=NULL,plot=FALSE,recalib=FALSE,...){
-	stopifnot(require(glmnet))
-	out <- list()
+	stopifnot(require(glmnet)) ###Ensures that glmnet is loaded
+	out <- list() ###Initializes output
 	# select trainFrac subjects to be the training set
 	subjects <- unique(subjIDs)
 	trainSubj <- sample(subjects,size=round(trainFrac*length(subjects)),replace=FALSE)
 	train <- subjIDs%in%trainSubj
 	out$train <- train
-	x <- t(expr)
+	x <- t(expr) ###transpose of expr
 	y <- time2XY(times)
 	# do the fit
 	out$cv.fit <- cv.glmnet(x[train,],y[train,],keep=T,alpha=a,family="mgaussian",...)

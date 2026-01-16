@@ -1,11 +1,15 @@
 RNGversion("3.5.1")
 library(limma)
-library(glmnet)
+library(glmnet) #Most likely used for elastic net regularization
 source("TimeStampFns.R")
+
+###ANNOTATED BY NATHAN HASEGAWA
 
 # This file contains expression data for all three datasets,
 # time, subject, and condition metadata, as well as previously
 # obtained ZeitZeiger and PLSR predictions for comparison
+
+###LOAD THE DATA
 load("data/TMexampleData.Rdata")
 
 #=====================================================================
