@@ -1,8 +1,16 @@
+###Citation for circglmbayes package: https://github.com/keesmulder/circglmbayes/tree/master
+###https://www.sciencedirect.com/science/article/abs/pii/S0022249616300827
+###Kees Mulder
+
+###This file is the TimeStampFns.R file, modified to perform univariate
+###circular regression instead of the XY-plane regression done for TimeMachine.
+
+CXX_STD = C++11
+
 #=====================================================================
 # time conversion functions
 #=====================================================================
 
-###CONVERTS TIMES IN THE FORM OF HH:MM TO DECIMAL FROM 0 TO 24 REPRESENTING HOURS
 time2dectime <- function(time){
 	if(any(c("POSIXct","POSIXt")%in%class(time))){
 		# if we have POSIX input, make it a string to meet our (bad)
@@ -19,22 +27,20 @@ time2dectime <- function(time){
 		hr_min <- strsplit(as.character(time),":")
 		hr <- as.numeric(sapply(hr_min,`[`,1))
 		min <- as.numeric(sapply(hr_min,`[`,2))
-		min[is.na(min)] <- 0
-		dectime <- hr+min/60
+        min[is.na(min)] <- 0
+        dectime <- hr+min/60
 	}
 	return(dectime)
 }
 
-###CONVERTS TIMES IN THE FORM OF HH:MM TO ANGLE IN RADIANS.
-###0 AND 360 ARE MIDNIGHT, 90 IS 6 AM, 180 IS NOON, ETC.
+
 time2angle <- function(time){
 	dectime <- time2dectime(time)
 	timeAngle <- (dectime%%24)*2*pi/24
 	return(timeAngle)
 }
 
-###CONVERTS TIMES IN THE FORM OF HH:MM TO X- AND Y- COORDINATES ON THE UNIT CIRCLE,
-###BASED ON THE ANGLE IN RADIANS.
+
 time2XY <- function(time){
 	a <- time2angle(time)
 	XYtime <- zapsmall(cbind(
@@ -44,12 +50,10 @@ time2XY <- function(time){
 	return(XYtime)
 }
 
-###I'M NOT SURE THIS ONE WORKS
 XY2dectime <- function(XYtime){
 	(atan2(XYtime[,1],XYtime[,2])%%(2*pi))*(24/(2*pi))
 }
 
-###CONVERTS (X,Y)-COORDINATE TIME TO AMPLITUDE (FINDS THE AMPLITUDE OF A COMPLEX NUMBER)
 XY2amp <- function(XYtime){
   (sqrt(XYtime[,1]**2 + XYtime[,2]**2))
 }
@@ -58,7 +62,6 @@ XY2amp <- function(XYtime){
 # Splitting & centering the expression data for each subject
 #=====================================================================
 
-###I DO NOT SEE THIS CALLED ANYWHERE
 recalibrateExprs <- function(exprMat,subjectIDs){
 	# exprMat is a genes * subjects matrix
 	# subjectIDs a vector of subject IDs
@@ -69,85 +72,16 @@ recalibrateExprs <- function(exprMat,subjectIDs){
 	return(FCs)
 }	
 
-
-#=====================================================================
-# FNS FOR MODELING X&Y CLOCK COORDS
-#=====================================================================
-
-###When we are doing ratio TM, we use expr = CPtrainRatioDat. When we are doing Z-score TM,
-###we use CPtrainZScoreDat.
-
-trainTimeStamp <- function(expr,subjIDs,times,trainFrac=0.5,a=NULL,s=NULL,plot=FALSE,recalib=FALSE,...){
-	stopifnot(require(glmnet)) ###Ensures that glmnet is loaded
-	out <- list() ###Initializes output
-
-	###Choose the training set (random sample)
-	subjects <- unique(subjIDs)
-	trainSubj <- sample(subjects,size=round(trainFrac*length(subjects)),replace=FALSE)
-	train <- subjIDs%in%trainSubj
-	out$train <- train
-	x <- t(expr) ###transpose of expr
-	y <- time2XY(times) ###I suspect that the times need to be written this way for training
-
-	###Does 10-fold Cross-validation to find a fit, on the training set ONLY.
-	###mgaussian is "multi-response Gaussian"— i.e. because we have two correlated responses
-	###(cosine and sine of the phase).
-	out$cv.fit <- cv.glmnet(x[train,],y[train,],keep=T,alpha=a,family="mgaussian",...)
-
-	###Add the coefficients for each predictor variable (666 if ratio, 37 if Z-score).
-	###Because of the regularization, most of these coefficients will be zero.
-	out$coef <- as.matrix(do.call(cbind,coef(out$cv.fit, s=s)))
-
-	###Get rid of all the zero entries (which predictor variable the coefficient
-	###is for is stored in the row name)
-	out$coef <- out$coef[rowSums(out$coef!=0)>0,][-1,]
-
-	###This predict call predicts the XY-time (cos and sin) for each training subject.
-	###Then we convert it to decimal time (0.00-24.00)
-	out$pred <- XY2dectime(predict(out$cv.fit,x,s=s)[,,1])
-	if(plot){
-		dectime <- time2dectime(times)
-		errplot(dectime,out$pred,col=2-train)
-	}
-	###Essentially, we are returning an object containing (1) the cv.fit object
-	###(cross-validation table), (2) the nonzero coefficients for each predictor,
-	###and (3) the predicted time for each training sample
-	return(out)
-}
-
-###It seems like newx is the new x-vector that we intend to predict the response for.
-predTimeStamp <- function(timestamp,newx=NULL,s=NULL){
-	stopifnot(require(glmnet))
-	if(is.null(newx)){
-		return(timestamp$pred)
-	}else{
-		newx <- t(newx)
-		###This seems like a fairly standard application of the predict operator
-		XY2dectime(predict(timestamp$cv.fit,newx,s=s)[,,1])
-	}
-}
-
-###This does the same as the above function, but gives the amplitude
-###instead of the phase
-predTimeStampAmp <- function(timestamp,newx=NULL,s=NULL){
-  stopifnot(require(glmnet))
-  if(is.null(newx)){
-    return(timestamp$pred)
-  }else{
-    newx <- t(newx)
-    XY2amp(predict(timestamp$cv.fit,newx,s=s)[,,1])
-  }
-}
 #=====================================================================
 # FNS FOR CALCULATING PREDICTION ERROR MODULO 24
 #=====================================================================
 
-timeErr <- function(trueTimes,predTimes,...){
-	predTimes <- predTimes%%24
-	trueTimes <- trueTimes%%24
-	timeDiffs <- abs(predTimes-trueTimes)
-	timeDiffs <- pmin(timeDiffs,24-timeDiffs)
-	return(timeDiffs)
+timeErr <- function(trueTimes,predTimes,...){ 
+    predTimes <- predTimes%%24
+    trueTimes <- trueTimes%%24
+    timeDiffs <- abs(predTimes-trueTimes)
+    timeDiffs <- pmin(timeDiffs,24-timeDiffs)
+    return(timeDiffs)
 }
 
 timeErrSigned <- function(trueTimes,predTimes,...){
@@ -159,12 +93,162 @@ timeErrSigned <- function(trueTimes,predTimes,...){
 	return(timeDiffs)
 }
 
+
+#=====================================================================
+# FNS FOR TRAINING AND APPLYING THE CIRCULAR REGRESSION PREDICTOR
+#=====================================================================
+
+#Note: no regularization for now. Regularization is needed to ensure
+#that coefficients are in (-pi, pi].
+stopifnot(require(circular))
+stopifnot(require(circglmbayes))
+
+#Compute the model prediction for time. This uses the circular package.
+x <- cbind(rnorm(10), rep(1, 10))
+x <- cbind(rnorm(10), rep(1,10))
+y <- circular(2*atan(c(x%*%c(5,1))), modulo="2pi")+rvonmises(10, mu=circular(0), kappa=100)
+model <- lm.circular(y=y, x=x, type="c-l", init=c(5,1), verbose=TRUE)
+
+#Compute the 
+
+expr = CPtrainZScoreDat
+subjIDs = CPtrainSubjs
+times = CPtrainTimes
+trainFrac = 1
+
+x <- t(expr)
+y <- time2angle(times) - pi
+
+#NAIVE objective function: response is modded by 2*pi, linear link function.
+obj_fcn_naive <- function(beta) {
+    #The last element of beta is the constant term; each one before
+    #corresponds to one predictor.
+    sq_error <- 0
+    for (i in seq(1,dim(x)[1])) { #Iterates over rows of x
+        #Compute the predictor
+        y_pred <- beta[1:dim(x)[2]] %*% x[i,] + beta[length(beta)]
+        y_pred <- y_pred %% (2*pi)
+
+        #Compute the squared residual
+        resid <- min(abs(y_pred - y[i]), 2*pi - abs(y_pred - y[i]))
+        sq_error <- sq_error + resid^2
+    }
+    #TEMPORARY: Ridge penalty
+    reg_penalty <- 0.1 * sum(beta^2)
+    return(sq_error + reg_penalty)
+}
+
+#Conduct minimization using nlm()
+out_nlm_naive <- nlminb(rep(0, dim(x)[2]+1), obj_fcn_naive,
+           lower=rep(-pi, dim(x)[2]+1), 
+           upper=rep(pi, dim(x)[2]+1))
+
+#This method is very sensitive to the initial condition and isn't great.
+#The SSE is not that much below setting all the parameters to 0.
+
+#We now use the link function proposed by Fisher & Lee (1992) and see if that
+#works better. The distributional parameter lambda needs to be tuned via 
+#cross-validation and is fixed for the purpose of this test.
+obj_fcn_tanlink <- function(beta) {
+    #The last element of beta is the constant term; each one before
+    #corresponds to one predictor.
+    sq_error <- 0
+    for (i in seq(1,dim(x)[1])) { #Iterates over rows of x
+        #Compute the predictor
+        g_comp <- beta[1:dim(x)[2]] %*% x[i,] + beta[length(beta)]
+        y_pred <- 2 * atan(sign(g_comp) * abs(g_comp)^0.2)
+
+        #Compute the squared residual
+        resid <- min(abs(y_pred - y[i]), 2*pi - abs(y_pred - y[i]))
+        sq_error <- sq_error + resid^2
+    }
+    #TEMPORARY: Ridge penalty with lambda = 0.1
+    reg_penalty <- 1 * sum(abs(beta))
+    return(sq_error + reg_penalty)
+}
+
+#Note that with the link function, there is no longer a good reason to bound
+#the coefficients by +/- pi
+out_nlm_tanlink <- nlm(obj_fcn_tanlink, p=rep(0, dim(x)[2]+1))
+
+
+#Using circglmbayes package
+
+
+
+
+#Using circular package
+test_model <- lm.circular(y=y,x=x,type="c-l",init=rep(-0.01,dim(x)[2]), verbose=TRUE)
+
+
+#TM.CPhrs.Ratio <- trainTimeStamp(
+#  expr=CPtrainRatioDat, 
+#  subjIDs=CPtrainSubjs,
+#  times=CPtrainTimes,
+#  trainFrac=1, 
+#  recalib=FALSE,
+#  a = 0.2, s = 0.31,
+#  foldid=CPtrain.foldid, 
+#  plot=FALSE 
+#)
+
+#fn <- function(p) {Yhat<-(p[1]*X)/(p[2]+X); sum((Y-Yhat)^2)} 
+#out_nlm<-nlm(fn,p=c(gamma_0_guess, gamma_1_guess),hessian=TRUE)
+#print(out_nlm)
+
+#=====================================================================
+# FNS FOR MODELING X&Y CLOCK COORDS
+#=====================================================================
+
+trainTimeStamp <- function(expr,subjIDs,times,trainFrac=0.5,a=NULL,s=NULL,plot=FALSE,recalib=FALSE,...){
+	stopifnot(require(glmnet))
+	out <- list()
+
+	subjects <- unique(subjIDs)
+	trainSubj <- sample(subjects,size=round(trainFrac*length(subjects)),replace=FALSE)
+	train <- subjIDs%in%trainSubj
+	out$train <- train
+	x <- t(expr)
+	y <- time2angle(times) #Note: in base TimeMachine, this is time2XY. We are using only
+    #the angle (for now).
+
+    #For now, we stick to elastic net.
+
+	out$cv.fit <- cv.glmnet(x[train,],y[train,],keep=T,alpha=a,family="mgaussian",...)
+	out$coef <- as.matrix(do.call(cbind,coef(out$cv.fit, s=s)))
+	out$coef <- out$coef[rowSums(out$coef!=0)>0,][-1,]
+	out$pred <- XY2dectime(predict(out$cv.fit,x,s=s)[,,1])
+	if(plot){
+		dectime <- time2dectime(times)
+		errplot(dectime,out$pred,col=2-train)
+	}
+	return(out)
+}
+
+predTimeStamp <- function(timestamp,newx=NULL,s=NULL){
+	stopifnot(require(glmnet))
+	if(is.null(newx)){
+		return(timestamp$pred)
+	}else{
+		newx <- t(newx)
+		XY2dectime(predict(timestamp$cv.fit,newx,s=s)[,,1])
+	}
+}
+
+predTimeStampAmp <- function(timestamp,newx=NULL,s=NULL){
+  stopifnot(require(glmnet))
+  if(is.null(newx)){
+    return(timestamp$pred)
+  }else{
+    newx <- t(newx)
+    XY2amp(predict(timestamp$cv.fit,newx,s=s)[,,1])
+  }
+}
+
 #=====================================================================
 # FNS FOR PLOTTING PREDICTED CLOCK COORDS
 #=====================================================================
 
-###Plots the predicted vs. true time (Think Figures 1 and 2 of the TimeMachine paper).
-###WE CAN PROBABLY REUSE THIS FUNCTION
 errplot <- function(trueHr,predHr,col=1,pch=1,main="Time of Day (24h)"){
 	# plot predicted vs. true time of day , with grey bands at 2 & 4h MOE
 	plot(trueHr,predHr,xlab="",ylab="",main=main,yaxs='i', xaxp=c(0,24,6),yaxp=c(0,24,6),col=col,pch=pch,xlim=c(0,24),ylim=c(0,24))
@@ -176,7 +260,6 @@ errplot <- function(trueHr,predHr,col=1,pch=1,main="Time of Day (24h)"){
 	abline(a=24,b=1,col="grey");
 	abline(a=-24,b=1,col="grey");
 
-	###THIS IS JUST ADDING 
 	polygon(c(-48,48,48,-48),c(-48,48,48,-48)+c(-4,-4,4,4),border="grey",lty=3,col=adjustcolor("grey",alpha=0.2));
 	polygon(c(-48,48,48,-48),c(-48,48,48,-48)+c(-2,-2,2,2),border="grey",lty=2,col=adjustcolor("grey",alpha=0.3));
 	polygon(c(-48,48,48,-48),c(-48,48,48,-48)+c(-4,-4,4,4)+24,border="grey",lty=3,col=adjustcolor("grey",alpha=0.2));
@@ -186,7 +269,6 @@ errplot <- function(trueHr,predHr,col=1,pch=1,main="Time of Day (24h)"){
 	points(trueHr,predHr,col=col,pch=pch)
 }
 
-###THE LOWER HALF OF THE FIGURES. WE CAN PROBABLY KEEP THIS ONE AS WELL.
 tolplot <- function(trueHr,predHr,add=FALSE,col=1){
 	# plot % correct by tolerance, dropping lines at median, 90quantile, & 1sd 
 	predTimes <- predHr%%24
@@ -234,4 +316,3 @@ predplot <- function(trueHr,predHr,col=1,pch=1,main="Time of Day (24h)",...){
 	tolplot(trueHr,predHr)
 	invisible(out)
 }
-

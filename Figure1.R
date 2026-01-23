@@ -131,11 +131,13 @@ sample.std <- apply(cycling.expr,2,sd)
 predictor.expr.nor <- apply(cycling.expr, 1, function(x) {
   tmp <- (x-sample.mean)/sample.std
 })
-predictor.expr.nor <- t(predictor.expr.nor)
+predictor.expr.nor <- t(predictor.expr.nor) #These are values of predictor variables
+#in each sample. NOT the predictor itself (the 37 genes)
 predictor.expr.final <- predictor.expr.nor
 
 # select training samples 
-CPtrain <- all.meta$train==1  & !is.na(all.meta$CPhrs)
+CPtrain <- all.meta$train==1  & !is.na(all.meta$CPhrs) #If we can't estimate circadian time,
+#we do not use it in the training data. With seed 194, the !is.na excludes 44 training samples
 all.foldid <- rep(0,length(all.meta$train))
 all.foldid[all.meta$train==1] <- train.foldid
 CPtrain.foldid <- all.foldid[CPtrain]
