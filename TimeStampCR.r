@@ -4,8 +4,10 @@
 
 ###This file is the TimeStampFns.R file, modified to perform univariate
 ###circular regression instead of the XY-plane regression done for TimeMachine.
+library(Rcpp)
+source("circglmbayes/R/circGLM.R")
+sourceCpp("circglmbayes/src/circGLM.cpp")
 
-CXX_STD = C++11
 
 #=====================================================================
 # time conversion functions
@@ -101,7 +103,6 @@ timeErrSigned <- function(trueTimes,predTimes,...){
 #Note: no regularization for now. Regularization is needed to ensure
 #that coefficients are in (-pi, pi].
 stopifnot(require(circular))
-stopifnot(require(circglmbayes))
 
 #Compute the model prediction for time. This uses the circular package.
 x <- cbind(rnorm(10), rep(1, 10))
@@ -174,6 +175,27 @@ out_nlm_tanlink <- nlm(obj_fcn_tanlink, p=rep(0, dim(x)[2]+1))
 
 #Using circglmbayes package
 
+
+circGLM(th = y,
+		conj_prior = c(1.358203, 1, 1),
+		bt_prior_musd = NA,
+		#bwb = TODO,
+		Q = 1000,
+		burnin = 100,
+		thin = 100)
+
+#Conj_prior: Von Mises. 
+#Q is # of iterations
+
+cglmArglist <- list(formula = thisFormula,
+                          data = Dataset(),
+                          Q = input$Q,
+                          burn = input$burn,
+                          thin = input$thin,
+                          r = input$r,
+                          bwb = rep(input$bwb, length(input$predictors)),
+                          bt_prior_musd = btpr,
+                          conj_prior = cjpr)
 
 
 
