@@ -8,8 +8,6 @@ library(ggplot2)
 library(ggforce)
 library(boot)
 
-#Example from the website for the circular package.
-
 #This is a shell plotting code for unit circle plots.
 
 angle_plot <- function(circData, ccol = "#c9cfd4", pcol = "#007fff") {
@@ -63,6 +61,30 @@ circ.lm$coefficients
 #In this case, the residuals appear to be symmetrically distributed around 0,
 #which is good. We could perform a Kolmogorov-Smirnov test to determine whether
 #they are Von Mises distributed. 
+
+
+#We now check to see if the regression is performed in the way that I think it
+#is. To check this, we fit two linear models for cos(y) and sin(y) to the same
+#set of predictors.
+
+cos_df <- data.frame(cos(y), cos(x), cos(2*x), sin(x), sin(2*x))
+sin_df <- data.frame(sin(y), cos(x), cos(2*x), sin(x), sin(2*x))
+
+colnames(cos_df) <- c("cosy", "cosx", "cos2x", "sinx", "sin2x")
+colnames(sin_df) <- c("siny", "cosx", "cos2x", "sinx", "sin2x")
+cos.lm <- lm(cosy~.,cos_df)
+sin.lm <- lm(siny~.,sin_df)
+
+#Check that coefficients agree
+print(cos.lm$coefficients - circ.lm$coefficients[,1])
+print(sin.lm$coefficients - circ.lm$coefficients[,2])
+
+#This clearly demonstrates that the circular regression is performed by using
+#a linear model for the cosine and sine of the response as a function of the
+#cosines and sines of the predictors at different frequencies. It provides a
+#clear suggestion for how we should extend this to multiple predictors and a
+#clear path to regularization.
+
 
 #For circular-circular regression, this package does not provide the standard
 #error of any of the parameters. We can find them by bootstrapping.
@@ -183,6 +205,11 @@ MSE
 MSEAve<- apply(MSE,2,mean); MSEAve #averaged mean square CV error
 MSEsd <- apply(MSE,2,sd); MSEsd   #SD of mean square CV error
 r2<-1-MSEAve/var(y); r2  #CV r^2
+
+#The CV results suggest that cross validation MSE is roughly flat once we get
+#past 15 terms. We fit the model one last time with 15 cos & sin terms.
+circ.lm <- lm.circular(y,x, type="c-c", order=15)
+angle_plot(circ.lm$fitted - y)
 
 #Prediction test (make sure this works before CV)
 #x <- circular(runif(200, 0, 2*pi))
