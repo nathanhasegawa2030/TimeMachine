@@ -123,18 +123,13 @@ make_sin_df <- function(x,n) {
 
 circ_lm <- function(y, x, n) {
   #Performs multiple circular regression using n terms.
-  cos_terms <- make_cos_df(x,n)
-  sin_terms <- make_sin_df(x,n)
-  cos_df <- data.frame(cos(y), cos_terms, sin_terms)
-  colnames(cos_df)[1] <- "cosy"
-  sin_df <- data.frame(sin(y), cos_terms, sin_terms)
-  colnames(sin_df)[1] <- "siny"
-  
-  ###TODO: MAKE THIS USE LESS MEMORY, COS_DF AND SIN_DF HAS A LOT OF DUPLICATION
+  predictors <- data.frame(make_cos_df(x,n), make_sin_df(x,n))
+  cosy <- cos(y)
+  siny <- sin(y)
   
   #Perform the regression
-  cos.lm <- lm(cosy~., cos_df)
-  sin.lm <- lm(siny~., sin_df)
+  cos.lm <- lm(cosy~., cbind(cosy, predictors))
+  sin.lm <- lm(siny~., cbind(siny,predictors))
   
   out <- list()
   out$y <- y
