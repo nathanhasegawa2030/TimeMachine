@@ -44,7 +44,7 @@ model.mgaussian <- circ.lm.mgaussian(y,x,a=alpha)
 #Plot the residuals
 p1 <- angle_plot(model.standard$residuals, pcol="#007fff", 
                  title="Training Residuals — Standard")
-p2 <- angle_plot(model.standard$residuals, pcol="#fd1900", 
+p2 <- angle_plot(model.mgaussian$residuals, pcol="#fd1900", 
                  title="Training Residuals — MGaussian")
 ggsave(filename="StandardTrainingResiduals.png", plot = p1,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
