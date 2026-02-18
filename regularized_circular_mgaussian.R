@@ -16,7 +16,8 @@ source("Desktop/NSH_WI26_Rotation/plotting.R")
 
 #The function below is written by Nathan Hasegawa.
 
-circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=3, nl=1000) {
+circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10, 
+                              nl=1000, seed=3330) {
   #Performs multiple circular-circular regression using n terms.
   #y: Vector of circular responses.
   #x: Data frame of circular predictors.
@@ -25,6 +26,8 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=3, nl=1000) {
   #a: values of alpha to use in cross-validation for GLMnet.
   #Nrep: number of replicates of 10-fold CV to use for each value of alpha
   #nl: number of lambda values to test for each call to cv.glmnet.
+  #seed: optional argument for which seed to set before computing folds. Default
+  #is 3330.
   
   #Clean the data
   predictors <- as.matrix(cbind(cos(x), sin(x)))
@@ -33,8 +36,22 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=3, nl=1000) {
   
   #Initialization
   num_a <- length(a)
-  lambda.1se <- numeric(num_a)
-  r2 <- numeric(num_a)
+  lambda.1se <- as.list(rep(0,num_a))
+  cv.al <- numeric(Nrep * nl * num_a)
+  cv.la <- numeric(Nrep * nl * num_a)
+  cv.rep <- numeric(Nrep * nl * num_a)
+  cv.mse <- numeric(Nrep * nl * num_a)
+  cv.r2 <- numeric(Nrep * nl * num_a)
+  cv.n0 <- numeric(Nrep * nl * num_a)
+  index = 1
+  
+  #Generate folds
+  set.seed(seed)
+  distn = rep(1:10, ceiling(length(y)/10))
+  folds = as.list(rep(0,Nrep))
+  for (k in 1:Nrep) {
+    folds[[k]] <- sample(distn, length(y), replace=FALSE)
+  }
   
   for (i in 1:num_a) {
     #CV loop in alpha. cv.glmnet does it in lambda.
@@ -44,26 +61,45 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=3, nl=1000) {
       #Fit a model
       model <- cv.glmnet(predictors,as.matrix(cbind(cosy,siny)),keep=T,
                          alpha=al,family="mgaussian",nfolds=10,
-                         nlambda=nl,standardize=F)
+                         nlambda=nl,standardize=F,foldid=folds[[j]])
       
       #Find lambda.1se
       ind <- model$index[2]
-      lambda.1se[i] <- lambda.1se[i] + (model$lambda.1se)/Nrep;
+      lambda.1se[[i]][j] <- model$lambda.1se
       
-      #Compute CV r^2 at that lambda and update the averages
-      r2[i] <- r2[i] + (1 - (model$cvm[ind]/(var(cosy) + var(siny))))/Nrep;
+      #Store the data from this replicate
+      nl_used = length(model$lambda)
+      cv.al[index:(index+nl_used-1)] = al
+      cv.la[index:(index+nl_used-1)] = model$lambda
+      cv.rep[index:(index+nl_used-1)] = j
+      cv.mse[index:(index+nl_used-1)] = model$cvm
+      cv.r2[index:(index+nl_used-1)] = (1 - model$cvm / (var(cosy) + var(siny)))
+      cv.n0[index:(index+nl_used-1)] = model$nzero
+      index = index + nl_used
     }
     print(paste0("Alpha = ", as.character(al), " complete"))
   }
   
+  #Handle the storage of error for all values of alpha and lambda
+  z = max(which(cv.al != 0))
+  cv.al = cv.al[1:z]
+  cv.la = cv.la[1:z]
+  cv.rep = cv.rep[1:z]
+  cv.mse = cv.mse[1:z]
+  cv.r2 = cv.r2[1:z]
+  cv.n0 = cv.n0[1:z]
+  cv.data <- data.frame(cv.al, cv.la, log10(cv.la), cv.rep, cv.mse, cv.r2, cv.n0)
+  colnames(cv.data) <- c("alpha", "lambda", "loglambda", "rep", "mse", "r2", "nonzero")
+  
   #Find the optimal alpha and lambda values for the cosine and sine model
-  amax <- a[which((r2 == max(r2)))]
-  lambdamax <- lambda.1se[which((r2 == max(r2)))]
+  amax <- cv.al[which(cv.r2 == max(cv.r2))[1]]
+  aind <- which(a == amax)
+  lambdamax <- mean(lambda.1se[[aind]])
   
   #Fit the final models for the cross-validated alpha value.
   #Note that we use all the folds here; no CV.
   model <- glmnet(predictors, as.matrix(cbind(cosy, siny)), keep=T,
-                  alpha=amax[1], standardize=F, family="mgaussian",nlambda = nl)
+                  alpha=amax, standardize=F, family="mgaussian",nlambda = nl)
   
   #Return the output
   out <- list()
@@ -74,7 +110,8 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=3, nl=1000) {
   out$nl <- nl
   out$amax <- amax
   out$lambdamax <- lambdamax
-  out$r2 <- r2
+  out$lambda1se <- lambda.1se
+  out$cv.data <- cv.data
   out$cos.coefficients <- coefficients(model, s=lambdamax)$cosy
   out$sin.coefficients <- coefficients(model, s=lambdamax)$siny
   pred <- predict(model, predictors, s=lambdamax)

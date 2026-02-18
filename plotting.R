@@ -3,6 +3,9 @@
 #Written by Nathan Hasegawa
 
 #Functions to generate plots
+library(ggplot2)
+library(plotly)
+library(interp)
 
 angle_plot <- function(circData, ccol = "#c9cfd4", pcol = "#007fff", 
                        title=NULL, loczero=0, mode="none",
@@ -93,9 +96,44 @@ donut_plot <- function(estData, obsData, ccol="#c9cfd4",
           plot.margin = unit(c(.2,.2,.2,.2), "inches"))
 }
 
-#This helper function was written by Google Gemini.
+sc3D <- function(data, x=loglambda, y=alpha, z=r2, pcol="#007fff",
+                 xlab='Log10 Lambda', ylab='Alpha',
+                 zlab='CV r^2') {
+  #Generates a 3D scatterplot using the template provided.
+  #df: the data frame or tibble to plot from.
+  #x: the x-axis column name.
+  #y: the y-axis column name.
+  #z: the z-axis column name.
+  #pcol: the color to use for each point.
+  p <- plot_ly(data, x = ~data$loglambda, y = ~data$alpha, z = ~data$r2)
+  p <- p %>% layout(scene = list(xaxis = list(title = xlab),
+                                 yaxis = list(title = ylab),
+                                 zaxis = list(title = zlab)),
+                            font = list(family = "Trebuchet MS", size = 14, 
+                                        color = "black"))
+  p
+}
+
+
+#This helper function was written by Google Gemini and shifts angles to (-pi,pi].
 rescale_angle <- function(angle) {
   angle <- angle %% (2 * pi) # Wrap to [0, 2*pi)
   angle[angle >= pi] <- angle[angle >= pi] - (2 * pi) # Shift angles > pi to the negative range
   angle
 }
+
+#This helper function outputs a new tibble that averages responses with
+#duplicate alpha and lambda. It was written by Google Gemini. 
+aggregate <- function(df, x=loglambda, y=alpha, z1=r2, z2=nonzero) {
+  agg <- df %>%
+  group_by({{x}}, {{y}}) %>%
+  summarize("{{z1}}" := mean({{z1}}, na.rm = TRUE), 
+            "{{z2}}" := mean({{z2}}, na.rm = TRUE),
+            .groups = 'drop')
+}
+
+
+
+
+
+

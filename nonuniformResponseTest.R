@@ -9,42 +9,38 @@
 source("Desktop/NSH_WI26_Rotation/regularized_circular.R")
 source("Desktop/NSH_WI26_Rotation/regularized_circular_mgaussian.R")
 
-#Generate the training data. Note that we have 50 predictors, and only two of
-#them are actually used to generate the synthetic responses; this is also a test
-#of how good the regularization is.
+#Import the training data
+train <- read.csv("Desktop/NSH_WI26_Rotation/SyntheticData/nonuniformTrain.csv")
+y <- train[,1]
+x <- train[,-1]
 
-xmat <- matrix(rvonmises(25000, (pi/2), 6), nrow = 500, ncol = 50)
-x <- as.data.frame(xmat)
-x1 <- x[,1]
-x2 <- x[,2]
-y <- atan2(5*cos(x1) - 4*cos(x2) + 2*sin(x1) - 1.9*sin(x2),
-           0.5*cos(x1) - 0.75*cos(x2) - 6*sin(x1) + 5.4*sin(x2)) + 
-  rvonmises(n=500, mu=circular(0), kappa=100)
-
-#Plot the distribution of predictors (x1 only)
-p <- angle_plot(x1, pcol="#ffa500", title="Distribution of Predictors")
+#Plot the distribution of x_33 (the x's are all generated according to this
+#distribution)
+p <- angle_plot(x[,33], pcol="#ffa500", title = "Predictor Distributuion")
+p
 ggsave(filename="PredictorDistribution.png", plot = p,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
        width=6,height=6,units="in")
 
-#The plot below shows the distribution of training responses.
-#Notice how it is concentrated towards the top and bottom. We can treat this in
-#some respects as a classification problem.
+#Plot the distribution of training responses
 p <- angle_plot(y, pcol="#2e8b56", title="Distribution of Responses")
+p
 ggsave(filename="ResponseDistribution.png", plot = p,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
        width=6,height=6,units="in")
 
 #Fit both models
 alpha = seq(0,1,0.1)
-
 model.standard <- circ.lm(y,x,a=alpha)
 model.mgaussian <- circ.lm.mgaussian(y,x,a=alpha)
 
+resid.train.std = model.standard$residuals
+resid.train.mga = model.mgaussian$residuals
+
 #Plot the residuals
-p1 <- angle_plot(model.standard$residuals, pcol="#007fff", 
+p1 <- angle_plot(resid.train.std, pcol="#007fff", 
                  title="Training Residuals — Standard")
-p2 <- angle_plot(model.mgaussian$residuals, pcol="#fd1900", 
+p2 <- angle_plot(resid.train.mga, pcol="#fd1900", 
                  title="Training Residuals — MGaussian")
 ggsave(filename="StandardTrainingResiduals.png", plot = p1,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
@@ -52,27 +48,13 @@ ggsave(filename="StandardTrainingResiduals.png", plot = p1,
 ggsave(filename="MGaussianTrainingResiduals.png", plot = p2,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
        width=6,height=6,units="in")
+p1
+p2
 
-#Due to the bimodal nature of the response distribution, we can treat this in
-#essence as a classification problem. We will define the classification accuracy
-#as the proportion of responses for which the residual is less than pi/4.
-#We compute the training classification accuracy for both models.
-#training.accuracy.std <- sum(abs(model.standard$residuals) < (pi/4))/length(y)
-#training.accuracy.mga <- sum(abs(model.mgaussian$residuals) < (pi/4))/length(y)
-
-
-#We now generate test data to evaluate how good our fitted models are
-#at predicting new responses.
-
-#Generate test data
-xmat.test <- matrix(rvonmises(25000, (pi/2), 6), nrow = 500, ncol = 50)
-x.test <- as.data.frame(xmat.test)
-x1.t <- x.test[,1]
-x2.t <- x.test[,2]
-y.test <- atan2(5*cos(x1.t) - 4*cos(x2.t) + 2*sin(x1.t) - 1.9*sin(x2.t),
-                0.5*cos(x1.t) - 0.75*cos(x2.t) - 6*sin(x1.t) + 5.4*sin(x2.t)) + 
-  rvonmises(n=500, mu=circular(0), kappa=100)
-
+#Import test data
+test <- read.csv("Desktop/NSH_WI26_Rotation/SyntheticData/nonuniformTest.csv")
+y.test <- test[,1]
+x.test <- test[,-1]
 yhat.test.std <- predict.circ(model.standard, x.test)
 yhat.test.mga <- predict.circ.mgaussian(model.mgaussian, x.test)
 resid.test.std <- sapply(y.test - yhat.test.std, rescale_angle)
@@ -85,6 +67,8 @@ ggsave(filename="StandardTestResiduals.png", plot = p1,
 ggsave(filename="MGaussianTestResiduals.png", plot = p2,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
        width=6,height=6,units="in")
+p1
+p2
 
 
 #Show the donut plot for the residuals. This gets at the predicted y-values.
@@ -96,7 +80,66 @@ ggsave(filename="StandardTestDonut.png", plot = p1,
 ggsave(filename="MGaussianTestDonut.png", plot = p2,
        path="Desktop/NSH_WI26_Rotation/nonuniformResponseTestImages",
        width=6,height=6,units="in")
+p1
+p2
 
-#Compute the classification accuracy for the test data
-#test.accuracy.std <- sum(abs(resid.test.std) < (pi/4))/length(y)
-#test.accuracy.mga <- sum(abs(resid.test.mga) < (pi/4))/length(y)
+#Store the fitted models and all the data
+save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
+     resid.test.mga, resid.train.std, resid.train.mga, aggregate, angle_plot,
+     donut_plot, rescale_angle,
+     file="Desktop/NSH_WI26_Rotation/Workspaces/nonuniformResponseTest.RData")
+load("Desktop/NSH_WI26_Rotation/Workspaces/nonuniformResponseTest.RData")
+
+#Summary statistics for test residuals
+summary(resid.test.std)
+summary(resid.test.mga)
+
+#Summary statistics for training residuals
+summary(resid.train.std)
+summary(resid.train.mga)
+
+#Plot of CV error as function of alpha and lambda. Google Gemini helped
+#write this code
+sin.data <- model.standard$sin.data
+cos.data <- model.standard$cos.data
+mga.data <- model.mgaussian$cv.data
+
+#Take log10 of lambda for interpolation
+sin.data$loglambda = log10(sin.data$lambda)
+cos.data$loglambda = log10(cos.data$lambda)
+mga.data$loglambda = log10(mga.data$lambda)
+
+#Take the average of responses with equal x- and y-components
+sin.agg <- aggregate(sin.data)
+cos.agg <- aggregate(cos.data)
+mga.agg <- aggregate(mga.data)
+
+
+#3D Plots of CV r^2 vs. alpha and lambda. We exclude alpha = 0 from this plot.
+sin.p <- plot_ly(sin.agg, x = ~loglambda, y = ~alpha, z = ~r2)
+sin.p <- sin.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
+                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
+                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
+                          font = list(family = "Trebuchet MS", size = 14, 
+                                      color = "black"))
+
+cos.p <- plot_ly(cos.agg, x = ~loglambda, y = ~alpha, z = ~r2)
+cos.p <- cos.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
+                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
+                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
+                          font = list(family = "Trebuchet MS", size = 14, 
+                                      color = "black"))
+
+mga.p <- plot_ly(mga.agg, x = ~loglambda, y = ~alpha, z = ~r2)
+mga.p <- mga.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
+                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
+                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
+                          font = list(family = "Trebuchet MS", size = 14, 
+                                      color = "black"))
+
+
+
+ggplot(sin.agg, aes(x=loglambda, y=alpha, color=r2)) + 
+  geom_point() +
+  scale_color_gradient(low = "#007fff", high = "#fd1900") +
+  xlim(min(sin.agg$loglambda)-0.1,0.1)
