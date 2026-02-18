@@ -96,21 +96,43 @@ donut_plot <- function(estData, obsData, ccol="#c9cfd4",
           plot.margin = unit(c(.2,.2,.2,.2), "inches"))
 }
 
-sc3D <- function(data, x=loglambda, y=alpha, z=r2, pcol="#007fff",
-                 xlab='Log10 Lambda', ylab='Alpha',
-                 zlab='CV r^2') {
+sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
+                 cmap="YlOrRd",
+                 xlab='log<sub>10</sub>(λ)', ylab='\u03B1',
+                 zlab='CV r<sup>2</sup>') {
   #Generates a 3D scatterplot using the template provided.
   #df: the data frame or tibble to plot from.
   #x: the x-axis column name.
   #y: the y-axis column name.
-  #z: the z-axis column name.
-  #pcol: the color to use for each point.
-  p <- plot_ly(data, x = ~data$loglambda, y = ~data$alpha, z = ~data$r2)
-  p <- p %>% layout(scene = list(xaxis = list(title = xlab),
-                                 yaxis = list(title = ylab),
-                                 zaxis = list(title = zlab)),
-                            font = list(family = "Trebuchet MS", size = 14, 
-                                        color = "black"))
+  #z: the z-axis column name. By default r2, but we sometimes use nonzero.
+  #cmap: the color map to use for each point.
+  #xlab: the x-axis label.
+  #ylab: the y-axis label.
+  #zlab: the z-axis label.
+  
+  axis_config <- list(showgrid = FALSE, showbackground = FALSE,
+                      showline = TRUE, zeroline = FALSE,
+                      linecolor = "black", linewidth = 4)
+  
+  if (zcol == "r2") {rs = TRUE} else {rs = FALSE}
+  if (zcol == "nonzero") {zlab = "Nonzero Terms"}
+  
+  p <- plot_ly() %>%
+    add_trace(data, x = ~data[[xcol]], y = ~data[[ycol]], 
+              z = ~data[[zcol]], type="scatter3d", mode="markers",
+              marker = list(color = ~data[[zcol]], colorscale=cmap, 
+                            reversescale=rs, showscale=TRUE, size=8,
+                            colorbar = list(title = "CV r<sup>2</sup>", side="top",
+                                            outlinewidth = 0, outlinecolor=NA,
+                                            lenmode = "fraction", len = 0.87,
+                                            yanchor = "center")))
+  
+  
+  p <- p %>% layout(scene = list(xaxis = c(list(title = xlab), axis_config),
+                                 yaxis = c(list(title = ylab), axis_config),
+                                 zaxis = c(list(title = zlab), axis_config)),
+                    font = list(family = "Trebuchet MS",
+                                size = 15, color = "black"))
   p
 }
 

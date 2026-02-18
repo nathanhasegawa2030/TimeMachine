@@ -79,8 +79,7 @@ p2
 
 #Store the fitted models and all the data
 save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
-     resid.test.mga, resid.train.std, resid.train.mga, aggregate, angle_plot,
-     donut_plot, rescale_angle,
+     resid.test.mga, resid.train.std, resid.train.mga,
      file="Desktop/NSH_WI26_Rotation/Workspaces/standardResponseTest.RData")
 load("Desktop/NSH_WI26_Rotation/Workspaces/standardResponseTest.RData")
 
@@ -91,6 +90,8 @@ summary(resid.test.mga)
 #Summary statistics for training residuals
 summary(resid.train.std)
 summary(resid.train.mga)
+
+source("Desktop/NSH_WI26_Rotation/plotting.R")
 
 
 #Plot of CV error as function of alpha and lambda. Google Gemini helped
@@ -118,27 +119,10 @@ mga.agg <- mga.agg[mga.agg$alpha > 0,]
 #Filter by where CV r^2 is large for best results. TO DEFINE "LARGE," WE HAVE TO
 #LOOK AT THE PLOT FIRST.
 
-#3D Plots of CV r^2 vs. alpha and lambda. We exclude alpha = 0 from this plot.
-
-axis_config <- list(showgrid = FALSE, showbackground = FALSE,
-                    showline = TRUE, zeroline = FALSE,
-                    linecolor = "black", linewidth = 4)
-
-sin.p <- plot_ly() %>%
-         add_trace(data = sin.agg, x = ~loglambda, y = ~alpha, z = ~r2, 
-                   type="scatter3d", mode="markers",
-                   marker = list(color=~r2, colorscale="YlOrRd", reversescale=TRUE,
-                                 cmin=-0.01, cmax=1, showscale=TRUE, size=8,
-                                 colorbar = list(title = "CV r<sup>2</sup>", side="top",
-                                                 outlinewidth = 0, outlinecolor=NA,
-                                                 lenmode = "fraction", len = 0.87,
-                                                 yanchor = "center")))
-
-sin.p <- sin.p %>% layout(scene = list(xaxis = c(list(title = 'log<sub>10</sub>(λ)'), axis_config),
-                                       yaxis = c(list(title = "\u03B1"), axis_config),
-                                       zaxis = c(list(title = 'CV r<sup>2</sup>'), axis_config)),
-                          font = list(family = "Trebuchet MS",
-                                      size = 14, color = "black"))
+#3D Plots of CV r^2 vs. alpha and lambda
+sin.p <- sc3D(sin.agg)
+cos.p <- sc3D(cos.agg)
+mga.p <- sc3D(mga.agg)
 
 
 
@@ -172,7 +156,7 @@ sin.p <- sin.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
 
 #TODO
 
-mga.top <- mga.agg[mga.agg$r2 > 0.8,]
+sin.top <- sin.agg[sin.agg$r2 > 0.8,]
   
 
 #Estimate how robust the choice of alpha and lambda are

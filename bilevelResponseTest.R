@@ -79,8 +79,7 @@ p2
 
 #Store the fitted models and all the data
 save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
-     resid.test.mga, resid.train.std, resid.train.mga, aggregate, angle_plot,
-     donut_plot, rescale_angle,
+     resid.test.mga, resid.train.std, resid.train.mga,
      file="Desktop/NSH_WI26_Rotation/Workspaces/bilevelResponseTest.RData")
 load("Desktop/NSH_WI26_Rotation/Workspaces/bilevelResponseTest.RData")
 
