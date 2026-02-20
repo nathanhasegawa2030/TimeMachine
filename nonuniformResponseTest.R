@@ -89,6 +89,11 @@ save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
      file="Desktop/NSH_WI26_Rotation/Workspaces/nonuniformResponseTest.RData")
 load("Desktop/NSH_WI26_Rotation/Workspaces/nonuniformResponseTest.RData")
 
+#CAN START HERE
+
+load("Desktop/NSH_WI26_Rotation/Workspaces/nonuniformResponseTest.RData")
+source("Desktop/NSH_WI26_Rotation/plotting.R")
+
 #Summary statistics for test residuals
 summary(resid.test.std)
 summary(resid.test.mga)
@@ -113,32 +118,32 @@ sin.agg <- aggregate(sin.data)
 cos.agg <- aggregate(cos.data)
 mga.agg <- aggregate(mga.data)
 
+#Filter by where alpha > 0. We do this because when alpha = 0, there is no
+#LASSO penalty, and terms do not go to 0. That is a bad model.
+sin.agg <- sin.agg[sin.agg$alpha > 0,]
+cos.agg <- cos.agg[cos.agg$alpha > 0,]
+mga.agg <- mga.agg[mga.agg$alpha > 0,]
 
-#3D Plots of CV r^2 vs. alpha and lambda. We exclude alpha = 0 from this plot.
-sin.p <- plot_ly(sin.agg, x = ~loglambda, y = ~alpha, z = ~r2)
-sin.p <- sin.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
-                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
-                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
-                          font = list(family = "Trebuchet MS", size = 14, 
-                                      color = "black"))
+#3D Plots of CV r^2 vs. alpha and lambda
+sin.p <- sc3D(sin.agg)
+cos.p <- sc3D(cos.agg)
+mga.p <- sc3D(mga.agg)
 
-cos.p <- plot_ly(cos.agg, x = ~loglambda, y = ~alpha, z = ~r2)
-cos.p <- cos.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
-                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
-                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
-                          font = list(family = "Trebuchet MS", size = 14, 
-                                      color = "black"))
+#Filter by where CV r^2 is large, so that we zoom in near the top of the plot
 
-mga.p <- plot_ly(mga.agg, x = ~loglambda, y = ~alpha, z = ~r2)
-mga.p <- mga.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
-                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
-                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
-                          font = list(family = "Trebuchet MS", size = 14, 
-                                      color = "black"))
+sin.top <- sin.agg[sin.agg$r2 > 0.65,]
+cos.top <- cos.agg[cos.agg$r2 > 0.5,]
+mga.top <- mga.agg[mga.agg$r2 > 0.65,]
 
+#Plot this again
+sin.ref <- sc3D(sin.top)
+cos.ref <- sc3D(cos.top)
+mga.ref <- sc3D(mga.top)
+
+#Plot number of nonzero terms in this regime
+sin.nzr <- sc3D(sin.top, zcol="nonzero")
+cos.nzr <- sc3D(cos.top, zcol="nonzero")
+mga.nzr <- sc3D(mga.top, zcol="nonzero")
 
 
-ggplot(sin.agg, aes(x=loglambda, y=alpha, color=r2)) + 
-  geom_point() +
-  scale_color_gradient(low = "#007fff", high = "#fd1900") +
-  xlim(min(sin.agg$loglambda)-0.1,0.1)
+

@@ -4,8 +4,11 @@
 
 #Functions to generate plots
 library(ggplot2)
+library(ggtext)
 library(plotly)
 library(interp)
+library(dplyr)
+library(processx)
 
 angle_plot <- function(circData, ccol = "#c9cfd4", pcol = "#007fff", 
                        title=NULL, loczero=0, mode="none",
@@ -96,7 +99,53 @@ donut_plot <- function(estData, obsData, ccol="#c9cfd4",
           plot.margin = unit(c(.2,.2,.2,.2), "inches"))
 }
 
-sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
+sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2", ccol=zcol,
+                 cmap="YlOrRd",
+                 xlab='log<sub>10</sub>(λ)', ylab='\u03B1',
+                 zlab='CV r<sup>2</sup>', clab=zlab) {
+  #Generates a 3D scatterplot using the template provided.
+  #df: the data frame or tibble to plot from.
+  #x: the x-axis column name.
+  #y: the y-axis column name.
+  #z: the z-axis column name. By default r2, but we sometimes use nonzero.
+  #cmap: the color map to use for each point.
+  #xlab: the x-axis label.
+  #ylab: the y-axis label.
+  #zlab: the z-axis label.
+  
+  axis_config <- list(showgrid = FALSE, showbackground = FALSE,
+                      showline = TRUE, zeroline = FALSE,
+                      linecolor = "black", linewidth = 4)
+  
+  #camera <- list(
+  #  eye = list(x = -1, y = 1.5, z = 0.5),
+  #  center = list(x = 0, y = 0, z = 0),
+  #  up = list(x = 0, y = 0, z = 1))
+  
+  if (ccol == "r2") {rs = TRUE} else {rs = FALSE}
+  if (zcol == "nonzero") {zlab = "Nonzero Terms"}
+  if (ccol == "nonzero") {clab = "Nonzero Terms"}
+  
+  p <- plot_ly() %>%
+    add_trace(data, x = ~data[[xcol]], y = ~data[[ycol]], 
+              z = ~data[[zcol]], type="scatter3d", mode="markers",
+              marker = list(color = ~data[[ccol]], colorscale=cmap, 
+                            reversescale=rs, showscale=TRUE, size=8,
+                            colorbar = list(title = list(text = clab, side = "top"),
+                              orientation = "h", x = 0.5, xanchor = "center",
+                              y = 0.8, yanchor = "bottom", len = 0.8,
+                              thickness = 16)))
+  
+  p <- p %>% layout(scene = list(xaxis = c(list(title = xlab), axis_config),
+                                 yaxis = c(list(title = ylab), axis_config),
+                                 zaxis = c(list(title = zlab), axis_config),
+                                 aspectmode = 'cube'),
+                    font = list(family = "Trebuchet MS",
+                                size = 15, color = "black"))
+  p
+}
+
+sc2D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
                  cmap="YlOrRd",
                  xlab='log<sub>10</sub>(λ)', ylab='\u03B1',
                  zlab='CV r<sup>2</sup>') {
@@ -112,27 +161,29 @@ sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
   
   axis_config <- list(showgrid = FALSE, showbackground = FALSE,
                       showline = TRUE, zeroline = FALSE,
-                      linecolor = "black", linewidth = 4)
+                      linecolor = "black", linewidth = 5)
   
   if (zcol == "r2") {rs = TRUE} else {rs = FALSE}
   if (zcol == "nonzero") {zlab = "Nonzero Terms"}
   
-  p <- plot_ly() %>%
+  p <- plot_ly(width=600, height=500) %>%
     add_trace(data, x = ~data[[xcol]], y = ~data[[ycol]], 
-              z = ~data[[zcol]], type="scatter3d", mode="markers",
+              type="scatter", mode="markers",
               marker = list(color = ~data[[zcol]], colorscale=cmap, 
                             reversescale=rs, showscale=TRUE, size=8,
-                            colorbar = list(title = "CV r<sup>2</sup>", side="top",
-                                            outlinewidth = 0, outlinecolor=NA,
-                                            lenmode = "fraction", len = 0.87,
-                                            yanchor = "center")))
+                            colorbar = list(title = list(text = zlab, 
+                                side = "top", font = list(family = "Trebuchet MS", size = 17)),
+                              orientation = 'h', x = 0.5, xanchor = "center",
+                              y = 1, yanchor = "bottom", lenmode = "fraction", 
+                              len = 0.8, thickness = 20, outlinewidth = 0)))
   
   
-  p <- p %>% layout(scene = list(xaxis = c(list(title = xlab), axis_config),
-                                 yaxis = c(list(title = ylab), axis_config),
-                                 zaxis = c(list(title = zlab), axis_config)),
-                    font = list(family = "Trebuchet MS",
-                                size = 15, color = "black"))
+  p <- p %>% layout(xaxis = c(list(title = xlab), axis_config),
+                    yaxis = c(list(title = ylab), axis_config),
+                    font = list(family = "Trebuchet MS", size = 17, 
+                                color = "black"),
+                    margin = list(t = 20, l = 20, r = 20, b = 20))
+  
   p
 }
 
@@ -154,7 +205,13 @@ aggregate <- function(df, x=loglambda, y=alpha, z1=r2, z2=nonzero) {
             .groups = 'drop')
 }
 
-
+#This helper function, written by Google Gemini, saves plotly images as .pngs.
+save_plotly <- function(p, folderpath, filename, w = 800, h = 450, s=4) {
+  # Kaleido handles the export directly without temporary HTML files
+  plotly::save_image(p, file = file.path(folderpath, filename),
+                     width = w, height = h, scale = s)
+  #width = w, height = h, scale=1)
+}
 
 
 

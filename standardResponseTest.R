@@ -81,7 +81,11 @@ p2
 save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
      resid.test.mga, resid.train.std, resid.train.mga,
      file="Desktop/NSH_WI26_Rotation/Workspaces/standardResponseTest.RData")
+
+#CAN START HERE
+
 load("Desktop/NSH_WI26_Rotation/Workspaces/standardResponseTest.RData")
+source("Desktop/NSH_WI26_Rotation/plotting.R")
 
 #Summary statistics for test residuals
 summary(resid.test.std)
@@ -90,9 +94,6 @@ summary(resid.test.mga)
 #Summary statistics for training residuals
 summary(resid.train.std)
 summary(resid.train.mga)
-
-source("Desktop/NSH_WI26_Rotation/plotting.R")
-
 
 #Plot of CV error as function of alpha and lambda. Google Gemini helped
 #write this code
@@ -116,57 +117,28 @@ sin.agg <- sin.agg[sin.agg$alpha > 0,]
 cos.agg <- cos.agg[cos.agg$alpha > 0,]
 mga.agg <- mga.agg[mga.agg$alpha > 0,]
 
-#Filter by where CV r^2 is large for best results. TO DEFINE "LARGE," WE HAVE TO
-#LOOK AT THE PLOT FIRST.
-
 #3D Plots of CV r^2 vs. alpha and lambda
 sin.p <- sc3D(sin.agg)
 cos.p <- sc3D(cos.agg)
 mga.p <- sc3D(mga.agg)
 
+#Filter by where CV r^2 is large for best results. TO DEFINE "LARGE," WE HAVE TO
+#LOOK AT THE PLOT FIRST.
 
-
-
-cos.p <- plot_ly(cos.agg, x = ~loglambda, y = ~alpha, z = ~r2)
-cos.p <- cos.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
-                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
-                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
-                          font = list(family = "Trebuchet MS", size = 14, 
-                                      color = "black"))
-
-mga.p <- plot_ly(mga.agg, x = ~loglambda, y = ~alpha, z = ~r2)
-mga.p <- mga.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
-                                       yaxis = list(title = 'Alpha', range = c(0.05, 1)),
-                                       zaxis = list(title = 'CV r^2'), range = c(0.8,1)),
-                          font = list(family = "Trebuchet MS", size = 14, 
-                                      color = "black"))
-
-
-#Do this by interpolation, not directly plotting the surface
-sin.smooth <- with(sin.agg, interp(loglambda, alpha, r2))
-sin.p <- with(sin.smooth, plot_ly(x = ~x, y = ~y, z = ~z, type = "surface"))
-sin.p <- sin.p %>% layout(scene = list(xaxis = list(title = 'Log10 Lambda'),
-                                       yaxis = list(title = 'Alpha'),
-                                       zaxis = list(title = 'CV r^2'),
-                                       caxis = list(title = 'CV r^2')),
-                          font= list(family = "Trebuchet MS", size = 14, 
-                                       color = "black"))
-
-#Refine it to just the largest r^2, then plot a heatmap
-
-#TODO
-
+#For this test case, 0.8 is a good benchmark
 sin.top <- sin.agg[sin.agg$r2 > 0.8,]
+cos.top <- cos.agg[cos.agg$r2 > 0.8,]
+mga.top <- mga.agg[mga.agg$r2 > 0.8,]
   
+#Plot this again
+sin.ref <- sc3D(sin.top)
+cos.ref <- sc3D(cos.top)
+mga.ref <- sc3D(mga.top)
 
-#Estimate how robust the choice of alpha and lambda are
+#Plot number of nonzero terms in this regime
+sin.nzr <- sc3D(sin.top, zcol="nonzero")
+cos.nzr <- sc3D(cos.top, zcol="nonzero")
+mga.nzr <- sc3D(mga.top, zcol="nonzero")
 
-#sin.alpha = model.standard$sin.amax
-#sin.lambda = model.standard$sin.model$lambda
-#cos.alpha = model.standard$cos.amax
-#cos.lambda = model.standard$cos.model$lambda
-#mga.alpha = model.mgaussian$amax
-#mga.lambda = model.mgaussian$model$lambda
 
-#For this alpha, do 10-replicate CV
 

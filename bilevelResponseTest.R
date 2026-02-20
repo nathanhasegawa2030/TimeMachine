@@ -83,6 +83,11 @@ save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
      file="Desktop/NSH_WI26_Rotation/Workspaces/bilevelResponseTest.RData")
 load("Desktop/NSH_WI26_Rotation/Workspaces/bilevelResponseTest.RData")
 
+#CAN START HERE
+
+load("Desktop/NSH_WI26_Rotation/Workspaces/bilevelResponseTest.RData")
+source("Desktop/NSH_WI26_Rotation/plotting.R")
+
 #Summary statistics for test residuals
 summary(resid.test.std)
 summary(resid.test.mga)
@@ -90,3 +95,49 @@ summary(resid.test.mga)
 #Summary statistics for training residuals
 summary(resid.train.std)
 summary(resid.train.mga)
+
+#Plot of CV error as function of alpha and lambda. Google Gemini helped
+#write this code
+sin.data <- model.standard$sin.data
+cos.data <- model.standard$cos.data
+mga.data <- model.mgaussian$cv.data
+
+#Take log10 of lambda for interpolation
+sin.data$loglambda = log10(sin.data$lambda)
+cos.data$loglambda = log10(cos.data$lambda)
+mga.data$loglambda = log10(mga.data$lambda)
+
+#Take the average of responses with equal x- and y-components
+sin.agg <- aggregate(sin.data)
+cos.agg <- aggregate(cos.data)
+mga.agg <- aggregate(mga.data)
+
+#Filter by where alpha > 0. We do this because when alpha = 0, there is no
+#LASSO penalty, and terms do not go to 0. That is a bad model.
+sin.agg <- sin.agg[sin.agg$alpha > 0,]
+cos.agg <- cos.agg[cos.agg$alpha > 0,]
+mga.agg <- mga.agg[mga.agg$alpha > 0,]
+
+#3D Plots of CV r^2 vs. alpha and lambda
+sin.p <- sc3D(sin.agg)
+cos.p <- sc3D(cos.agg)
+mga.p <- sc3D(mga.agg)
+
+#Filter by where CV r^2 is large, so that we zoom in near the top of the plot
+
+sin.top <- sin.agg[sin.agg$r2 > 0.7,]
+cos.top <- cos.agg[cos.agg$r2 > 0.05,]
+mga.top <- mga.agg[mga.agg$r2 > 0.7,]
+
+#Plot this again
+sin.ref <- sc3D(sin.top)
+cos.ref <- sc3D(cos.top)
+mga.ref <- sc3D(mga.top)
+
+#Plot number of nonzero terms in this regime
+sin.nzr <- sc3D(sin.top, zcol="nonzero")
+cos.nzr <- sc3D(cos.top, zcol="nonzero")
+mga.nzr <- sc3D(mga.top, zcol="nonzero")
+
+
+
