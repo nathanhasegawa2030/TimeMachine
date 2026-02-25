@@ -161,6 +161,43 @@ cos.nzr.2D <- sc2D(cos.par, zcol="nonzero")
 mga.nzr.2D <- sc2D(mga.par, zcol="nonzero")
 
 
+#Compute the composite r^2 for the standard case
+source("Desktop/NSH_WI26_Rotation/regularized_circular.R")
+test <- read.csv("Desktop/NSH_WI26_Rotation/SyntheticData/standardOverdeterminedMinorTest.csv")
+
+#Choose the "correct" number of terms that we want to consider. (This is 
+#synthetic data; we happen to know the correct number of terms.)
+nterms <- c(4,5)
+pct <- 0.85 #Plot only the top 15% by r^2
+
+#FUNCTION NAME
+comp.agg <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
+                    nterms, pct)
+
+#Plot points in blue where the cosine and sine lambdas are equal. These are the
+#models that the Mgaussian approach would select from
+minl <- max(min(comp.agg$sinloglambda), min(comp.agg$cosloglambda))
+maxl <- min(max(comp.agg$sinloglambda), max(comp.agg$cosloglambda))
+minz <- min(comp.agg$r2)
+maxz <- max(comp.agg$r2)
+x <- c(minl, minl, maxl, maxl)
+y <- c(minl, minl, maxl, maxl)
+z <- c(minz, maxz, maxz, minz)
+bluept <- data.frame(x,y,z)
+
+#3D plot of CV r^2 for the composite model
+
+comp.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
+                  xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                  ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                  bluept = bluept)
+
+
+###THIS IS JUST TRAINING CV R^2. WE CAN ALSO APPLY THIS DIRECTLY TO THE TEST
+###DATA AND SEE HOW IT PERFORMS
+
+
+
 #Export the plots
 folderpath <- "Desktop/NSH_WI26_Rotation/standardOverdeterminedMinorImages"
 save_plotly(sin.nzr.2D, folderpath, "SinNonzero.png")

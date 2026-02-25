@@ -102,7 +102,8 @@ donut_plot <- function(estData, obsData, ccol="#c9cfd4",
 sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2", ccol=zcol,
                  cmap="YlOrRd",
                  xlab='log<sub>10</sub>(λ)', ylab='\u03B1',
-                 zlab='CV r<sup>2</sup>', clab=zlab) {
+                 zlab='CV r<sup>2</sup>', clab=zlab,
+                 bluept = NULL) {
   #Generates a 3D scatterplot using the template provided.
   #df: the data frame or tibble to plot from.
   #x: the x-axis column name.
@@ -112,6 +113,8 @@ sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2", ccol=zcol,
   #xlab: the x-axis label.
   #ylab: the y-axis label.
   #zlab: the z-axis label.
+  #bluept: optional argument to plot a blue line on the plot. The data frame
+  #MUST have x, y, and z values.
   
   axis_config <- list(showgrid = FALSE, showbackground = FALSE,
                       showline = TRUE, zeroline = FALSE,
@@ -142,6 +145,11 @@ sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2", ccol=zcol,
                                  aspectmode = 'cube'),
                     font = list(family = "Trebuchet MS",
                                 size = 15, color = "black"))
+  
+  if (!is.null(bluept)) {
+    p <- p %>% add_mesh(data = bluept, x = ~x, y = ~y, z = ~z,
+      opacity=0.5, facecolor = rep("#007fff", 2), delaunayaxis="x")
+  }
   p
 }
 
@@ -205,14 +213,26 @@ aggregate <- function(df, x=loglambda, y=alpha, z1=r2, z2=nonzero) {
             .groups = 'drop')
 }
 
+#This helper function does the same, for trying to find the composite r^2
+aggregate2 <- function(df, x=sinloglambda, y=cosloglambda, z=r2) {
+  agg <- df %>%
+    group_by({{x}}, {{y}}) %>%
+    summarize("{{z}}" := mean({{z}}, na.rm = TRUE),
+              .groups = 'drop')
+}
+
+#This helper function does the same, for trying to find the composite and test r^2
+aggregate3 <- function(df, x=sinloglambda, y=cosloglambda, z1=r2, z2=testr2) {
+  agg <- df %>%
+    group_by({{x}}, {{y}}) %>%
+    summarize("{{z1}}" := mean({{z1}}, na.rm = TRUE), 
+              "{{z2}}" := mean({{z2}}, na.rm = TRUE),
+              .groups = 'drop')
+}
+
 #This helper function, written by Google Gemini, saves plotly images as .pngs.
 save_plotly <- function(p, folderpath, filename, w = 800, h = 450, s=4) {
   # Kaleido handles the export directly without temporary HTML files
   plotly::save_image(p, file = file.path(folderpath, filename),
                      width = w, height = h, scale = s)
-  #width = w, height = h, scale=1)
 }
-
-
-
-
