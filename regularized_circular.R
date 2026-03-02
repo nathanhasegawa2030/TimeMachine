@@ -233,6 +233,12 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
                            nfolds=10, foldid=folds[[k]], type.measure="deviance", 
                            lambda=rev(10^(cos.max$loglambda)), standardize=F)
     
+    #If we supply test data, predict the sine and cosine of the test data
+    if (!is.null(test)) {
+      sin.test.pred <- predict(sin.model, predictors.test, s=sin.model$lambda)
+      cos.test.pred <- predict(cos.model, predictors.test, s=cos.model$lambda)
+    }
+    
     #The keep=T argument ensures that the prediction for each value, when its
     #fold is missing, is stored in the matrix fit.preval. The jth row corresponds
     #to the jth value of lambda. We use this matrix to compute the composite r^2
@@ -256,15 +262,18 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
         comp.sinl[index] <- sin.model$lambda[i]
         comp.cosl[index] <- cos.model$lambda[j]
         comp.r2[index] <- comp.r2[index] + (1 - mean(resid^2)/(var(cosy)+var(siny)))/Nrep
+        
+        #If we supply test data, compute the test r^2
+        if (!is.null(test)) {
+          test.pred <- atan2(sin.test.pred[,i], cos.test.pred[,j])
+          resid.test <- sapply(y.test - test.pred, rescale_angle)
+          test.r2[index] <- test.r2[index] + (1 - mean(resid.test^2)/(var(cos.test)+var(sin.test)))/Nrep
+        }
         index <- index + 1
       }
     }
     print("Iteration complete")
   }
-  
-  
-  
-  
   if (!is.null(test)) {
     comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, test.r2)
     colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "testr2")
@@ -276,12 +285,3 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
   }
   comp.agg
 }
-
-#If we supply test data, predict the test data and compute a test r2 too
-# if (!is.null(test)) {
-#   sin.pred <- predict(sin.model, predictors.test, s=sin.model$lambda[i])
-#   cos.pred <- predict(cos.model, predictors.test, s=cos.model$lambda[i])
-#   test.pred <- atan2(sin.pred, cos.pred)
-#   resid.test <- sapply(y.test - test.pred, rescale_angle)
-#   test.r2[index] <- test.r2[index] + (1 - mean(resid.test^2)/(var(cos.test)+var(sin.test)))/Nrep
-# }

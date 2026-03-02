@@ -73,7 +73,18 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10,
       cv.la[index:(index+nl_used-1)] = model$lambda
       cv.rep[index:(index+nl_used-1)] = j
       cv.mse[index:(index+nl_used-1)] = model$cvm
-      cv.r2[index:(index+nl_used-1)] = (1 - model$cvm / (var(cosy) + var(siny)))
+      
+      #Note: when computing r^2, we use the fitted values for Y,
+      #not cos(y) and sin(y)
+      
+      #Compute r^2 for each lambda
+      local.r2 <- numeric(nl_used)
+      for (k in 1:nl_used) {
+        ypred <- atan2(model$fit.preval[,,k][,2], model$fit.preval[,,k][,1])
+        resid <- rescale_angle(y - ypred)
+        local.r2[k] <- 1 - (mean(resid^2) / (var(cosy) + var(siny)))
+      }
+      cv.r2[index:(index+nl_used-1)] = local.r2
       cv.n0[index:(index+nl_used-1)] = model$nzero
       index = index + nl_used
     }
@@ -124,6 +135,7 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10,
   out
 }
 
+#Old, do not use
 predict.circ.mgaussian <- function(model, newx) {
   #Accepts as input an output a new set of ANGULAR predictors (not cosines and
   #sines) and returns the angular responses predicted by the model. 
@@ -132,5 +144,32 @@ predict.circ.mgaussian <- function(model, newx) {
   pred <- pred[,,1]
   atan2(pred[,2], pred[,1])
 }
+
+#Better version
+predict.mgaussian <- function(model, newx, s=model$lambda) {
+  #Accepts as input an output a new set of ANGULAR predictors (not cosines and
+  #sines) and returns the angular responses predicted by the model. 
+  predictors <- as.matrix(cbind(cos(newx), sin(newx)))
+  pred <- predict(model, predictors, s=s)
+  out <- as.list(numeric(length(s)))
+  for (i in 1:length(s)) {
+    out[[i]] <- atan2(pred[,,i][,2], pred[,,i][,1])
+  }
+  out
+}
+
+#Refit alpha = 1 model. We need this due to errors earlier on, where the only
+#model stored was alphamax (even though alpha=1 is what we care about for some plots).
+refit.a1 <- function(y,x,nl=1000) {
+  #Clean the data
+  predictors <- as.matrix(cbind(cos(x), sin(x)))
+  cosy <- cos(y)
+  siny <- sin(y)
+
+  #Fit the final model
+  a1.model <- glmnet(predictors, as.matrix(cbind(cosy, siny)), keep=T,
+                     alpha=1, standardize=F, family="mgaussian",nlambda = nl)
+}
+
 
 

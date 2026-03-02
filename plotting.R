@@ -125,7 +125,7 @@ sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2", ccol=zcol,
   #  center = list(x = 0, y = 0, z = 0),
   #  up = list(x = 0, y = 0, z = 1))
   
-  if (ccol == "r2") {rs = TRUE} else {rs = FALSE}
+  if (ccol %in% c("r2", "testr2")) {rs = TRUE} else {rs = FALSE}
   if (zcol == "nonzero") {zlab = "Nonzero Terms"}
   if (ccol == "nonzero") {clab = "Nonzero Terms"}
   
@@ -156,7 +156,8 @@ sc3D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2", ccol=zcol,
 sc2D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
                  cmap="YlOrRd",
                  xlab='log<sub>10</sub>(λ)', ylab='\u03B1',
-                 zlab='CV r<sup>2</sup>') {
+                 zlab='CV r<sup>2</sup>',
+                 ylim = NULL) {
   #Generates a 3D scatterplot using the template provided.
   #df: the data frame or tibble to plot from.
   #x: the x-axis column name.
@@ -166,12 +167,13 @@ sc2D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
   #xlab: the x-axis label.
   #ylab: the y-axis label.
   #zlab: the z-axis label.
+  #ylim: optional argument for the y-axis limits. Do not use
   
   axis_config <- list(showgrid = FALSE, showbackground = FALSE,
                       showline = TRUE, zeroline = FALSE,
                       linecolor = "black", linewidth = 5)
   
-  if (zcol == "r2") {rs = TRUE} else {rs = FALSE}
+  if (zcol %in% c("r2", "testr2")) {rs = TRUE} else {rs = FALSE}
   if (zcol == "nonzero") {zlab = "Nonzero Terms"}
   
   p <- plot_ly(width=600, height=500) %>%
@@ -180,10 +182,10 @@ sc2D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
               marker = list(color = ~data[[zcol]], colorscale=cmap, 
                             reversescale=rs, showscale=TRUE, size=8,
                             colorbar = list(title = list(text = zlab, 
-                                side = "top", font = list(family = "Trebuchet MS", size = 17)),
-                              orientation = 'h', x = 0.5, xanchor = "center",
-                              y = 1, yanchor = "bottom", lenmode = "fraction", 
-                              len = 0.8, thickness = 20, outlinewidth = 0)))
+                                                         side = "top", font = list(family = "Trebuchet MS", size = 17)),
+                                            orientation = 'h', x = 0.5, xanchor = "center",
+                                            y = 1, yanchor = "bottom", lenmode = "fraction", 
+                                            len = 0.8, thickness = 20, outlinewidth = 0)))
   
   
   p <- p %>% layout(xaxis = c(list(title = xlab), axis_config),

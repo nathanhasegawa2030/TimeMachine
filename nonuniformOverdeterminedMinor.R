@@ -35,7 +35,7 @@ ggsave(filename="PredictorDistribution.png", plot = p,
 
 
 #Fit both models
-alpha = seq(0.1,1,0.1)
+alpha = seq(0.5,1,0.05)
 model.standard <- circ.lm(y,x,a=alpha)
 model.mgaussian <- circ.lm.mgaussian(y,x,a=alpha)
 
@@ -93,18 +93,15 @@ save(model.standard, model.mgaussian, test, train, alpha, resid.test.std,
      resid.test.mga, resid.train.std, resid.train.mga,
      file="Desktop/NSH_WI26_Rotation/Workspaces/nonuniformOverdeterminedMinor.RData")
 
+
 #CAN START HERE
 
 load("Desktop/NSH_WI26_Rotation/Workspaces/nonuniformOverdeterminedMinor.RData")
+folderpath <- "Desktop/NSH_WI26_Rotation/nonuniformOverdeterminedMinorImages"
 source("Desktop/NSH_WI26_Rotation/plotting.R")
-
-#Summary statistics for test residuals
-summary(resid.test.std)
-summary(resid.test.mga)
-
-#Summary statistics for training residuals
-summary(resid.train.std)
-summary(resid.train.mga)
+source("Desktop/NSH_WI26_Rotation/regularized_circular.R")
+source("Desktop/NSH_WI26_Rotation/regularized_circular_mgaussian.R")
+test <- read.csv("Desktop/NSH_WI26_Rotation/SyntheticData/nonuniformOverdeterminedMinorTest.csv")
 
 #Plot of CV error as function of alpha and lambda. Google Gemini helped
 #write this code
@@ -134,10 +131,9 @@ cos.p <- sc3D(cos.agg)
 mga.p <- sc3D(mga.agg)
 
 #Filter by where CV r^2 is large, so that we zoom in near the top of the plot
-
-sin.top <- sin.agg[sin.agg$r2 > 0.7,]
+sin.top <- sin.agg[sin.agg$r2 > 0.65,]
 cos.top <- cos.agg[cos.agg$r2 > 0.4,]
-mga.top <- mga.agg[mga.agg$r2 > 0.6,]
+mga.top <- mga.agg[mga.agg$r2 > 0.7,]
 
 #Plot this again
 sin.ref <- sc3D(sin.top)
@@ -170,8 +166,112 @@ cos.nzr.2D <- sc2D(cos.par, zcol="nonzero")
 mga.nzr.2D <- sc2D(mga.par, zcol="nonzero")
 
 
+#Compute the composite r^2 for the standard case
+
+#Choose the "correct" number of terms that we want to consider. (This is 
+#synthetic data; we happen to know the correct number of terms.)
+nterms <- c(4,5)
+pct <- 0
+
+#Compute the composite r^2's
+comp.agg <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
+                    nterms, pct)
+
+#Plot points in blue where the cosine and sine lambdas are equal. These are the
+#models that the Mgaussian approach would select from
+# minl <- max(min(comp.agg$sinloglambda), min(comp.agg$cosloglambda))
+# maxl <- min(max(comp.agg$sinloglambda), max(comp.agg$cosloglambda))
+# minz <- min(comp.agg$r2)
+# maxz <- max(comp.agg$r2)
+# x <- c(minl, minl, maxl, maxl)
+# y <- c(minl, minl, maxl, maxl)
+# z <- c(minz, maxz, maxz, minz)
+# bluept <- data.frame(x,y,z)
+
+#3D plot of CV r^2 for the composite model
+
+comp.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
+                  xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                  ylab='log<sub>10</sub>(λ<sub>cos</sub>)')
+
+
+#Now plot the test r^2 too
+test.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
+                  zcol="testr2",
+                  xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                  ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                  zlab='Test r<sup>2</sup>')
+
+#Now do the same for the overfit models
+nterms <- seq(1,2*dim(model.standard$x)[2],1)
+pct <- 0.95
+comp.overfit <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
+                        nterms, pct)
+
+#3D plot of CV r^2 for the overfit models
+comp.overfit.r2.p <- sc3D(comp.overfit, xcol="sinloglambda", ycol="cosloglambda",
+                          xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                          ylab='log<sub>10</sub>(λ<sub>cos</sub>)')
+
+#Same for test r^2
+test.overfit.r2.p <- sc3D(comp.overfit, xcol="sinloglambda", ycol="cosloglambda",
+                          zcol="testr2",
+                          xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                          ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                          zlab='Test r<sup>2</sup>')
+
+#2D versions of the above plots
+
+comp.r2.2D <- sc2D(comp.agg, xcol="cosloglambda", ycol="sinloglambda",
+                   xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                   ylab='log<sub>10</sub>(λ<sub>sin</sub>)')
+
+test.r2.2D <- sc2D(comp.agg, xcol="cosloglambda", ycol="sinloglambda",
+                   zcol="testr2",
+                   xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                   ylab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                   zlab='Test r<sup>2</sup>')
+
+comp.overfit.2D <- sc2D(comp.overfit, xcol="cosloglambda", ycol="sinloglambda",
+                        xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                        ylab='log<sub>10</sub>(λ<sub>sin</sub>)')
+
+test.overfit.2D <- sc2D(comp.overfit, xcol="cosloglambda", ycol="sinloglambda",
+                        zcol="testr2",
+                        xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+                        ylab='log<sub>10</sub>(λ<sub>sin</sub>)',
+                        zlab='Test r<sup>2</sup>')
+
+#Plot of lambda vs. composite r^2 for MGaussian. Here we use the entire range of
+#lambda's, since there aren't that many, and prediction is fast.
+mga.a1 <- aggregate(mga.data[mga.data$alpha == 1,])
+mga.a1.plot <- mga.a1[mga.a1$r2 > 0.5,]
+mga.r2.2D <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero",
+                  ylab='CV r<sup>2</sup>')
+#Same plot but for sparse models only
+mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero < 10,]
+mga.r2.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero",
+                         ylab='CV r<sup>2</sup>')
+
+
+#Plot of lambda vs. test r^2 for MGaussian
+mga.model <- model.mgaussian$model
+mga.test.pred <- predict.mgaussian(mga.model, test[,-1])
+y.test <- rescale_angle(test[,1])
+resid2 <- function (ypred) {mean((rescale_angle(ypred - y.test))^2)}
+test.resid.mean <- sapply(mga.test.pred, resid2)
+mga.test.r2 <- 1 - test.resid.mean/(var(cos(y.test))+var(sin(y.test)))
+mga.a1$testr2 <- mga.test.r2
+mga.a1.plot <- mga.a1[mga.a1$testr2 > 0.4,]
+test.mga.2D <- sc2D(mga.a1.plot, xcol="loglambda", ycol="testr2", zcol="nonzero",
+                    ylab='Test r<sup>2</sup>')
+#Same plot but for sparse models only
+mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero < 10,]
+test.mga.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="testr2", zcol="nonzero",
+                           ylab='Test r<sup>2</sup>')
+
+
 #Export the plots
-folderpath <- "Desktop/NSH_WI26_Rotation/nonuniformOverdeterminedMinorImages"
 save_plotly(sin.nzr.2D, folderpath, "SinNonzero.png")
 save_plotly(cos.nzr.2D, folderpath, "CosNonzero.png")
 save_plotly(mga.nzr.2D, folderpath, "MgaNonzero.png")
@@ -180,3 +280,11 @@ save_plotly(sin.ref.2D, folderpath, "Sinr2.png")
 save_plotly(cos.ref.2D, folderpath, "Cosr2.png")
 save_plotly(mga.ref.2D, folderpath, "Mgar2.png")
 
+save_plotly(comp.r2.2D, folderpath, "CompositeSparser2.png")
+save_plotly(comp.overfit.2D, folderpath, "CompositeOverfitr2.png")
+save_plotly(test.r2.2D, folderpath, "CompositeTestSparser2.png")
+save_plotly(test.overfit.2D, folderpath, "CompositeTestOverfitr2.png")
+save_plotly(mga.r2.2D, folderpath, "Mgar2.png")
+save_plotly(test.mga.2D, folderpath, "MgaTestr2.png")
+save_plotly(mga.r2.2D.sparse, folderpath, "Mgar2Sparse.png")
+save_plotly(test.mga.2D.sparse, folderpath, "MgaTestr2Sparse.png")

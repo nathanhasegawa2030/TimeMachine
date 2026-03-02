@@ -159,3 +159,68 @@ write.csv(data.frame(y,x),
           file = "Desktop/NSH_WI26_Rotation/SyntheticData/nonuniformOverdeterminedMajorTest.csv", 
           row.names=FALSE)
 
+#(8) Standard Overdetermined— Major, With Correlated Predictors
+xmat <- matrix(runif(100000, 0, 2*pi), nrow = 100, ncol = 1000)
+x <- as.data.frame(xmat)
+x1 <- x[,1]
+x2 <- x[,2]
+#Correlated predictors
+x[,3] <- (0.75*pi) + x1 + rvonmises(100, mu=0, kappa=250)
+x[,4] <- (-0.5*pi) + x2 + rvonmises(100, mu=0, kappa=250)
+x[,5] <- (-0.25*pi) + x1 + rvonmises(100, mu=0, kappa=100)
+x[,6] <- (pi/6) + x2 + rvonmises(100, mu=0, kappa=100)
+
+y <- atan2(1.4*cos(x1) - 1.1*cos(x2) + 0.8*sin(x1) + 0.9*sin(x2),
+           1.1*cos(x1) - 0.9*cos(x2) - 1.2*sin(x1) - 0.6*sin(x2)) + rvonmises(n=100, mu=circular(0), kappa=100)
+write.csv(data.frame(y,x), 
+          file = "Desktop/NSH_WI26_Rotation/SyntheticData/standardCorrelatedMajorTrain.csv", 
+          row.names=FALSE)
+
+xmat <- matrix(runif(100000, 0, 2*pi), nrow = 100, ncol = 1000)
+x <- as.data.frame(xmat)
+x1 <- x[,1]
+x2 <- x[,2]
+#Correlated predictors
+x[,3] <- (0.75*pi) + x1 + rvonmises(100, mu=0, kappa=250)
+x[,4] <- (-0.5*pi) + x2 + rvonmises(100, mu=0, kappa=250)
+x[,5] <- (-0.25*pi) + x1 + rvonmises(100, mu=0, kappa=100)
+x[,6] <- (pi/6) + x2 + rvonmises(100, mu=0, kappa=100)
+y <- atan2(1.4*cos(x1) - 1.1*cos(x2) + 0.8*sin(x1) + 0.9*sin(x2),
+           1.1*cos(x1) - 0.9*cos(x2) - 1.2*sin(x1) - 0.6*sin(x2)) + rvonmises(n=100, mu=circular(0), kappa=100)
+write.csv(data.frame(y,x), 
+          file = "Desktop/NSH_WI26_Rotation/SyntheticData/standardCorrelatedMajorTest.csv", 
+          row.names=FALSE)
+
+#(9) Standard Overdetermined— Minor, With Correlated Predictors
+xmat <- matrix(runif(500000, 0, 2*pi), nrow = 500, ncol = 1000)
+x <- as.data.frame(xmat)
+x1 <- x[,1]
+x2 <- x[,2]
+#Correlated predictors
+x[,3] <- (0.75*pi) + x1 + rvonmises(500, mu=0, kappa=250)
+x[,4] <- (-0.5*pi) + x2 + rvonmises(500, mu=0, kappa=250)
+x[,5] <- (-0.25*pi) + x1 + rvonmises(500, mu=0, kappa=100)
+x[,6] <- (pi/6) + x2 + rvonmises(500, mu=0, kappa=100)
+
+y <- atan2(1.4*cos(x1) - 1.1*cos(x2) + 0.8*sin(x1) + 0.9*sin(x2),
+           1.1*cos(x1) - 0.9*cos(x2) - 1.2*sin(x1) - 0.6*sin(x2)) + rvonmises(n=500, mu=circular(0), kappa=100)
+write.csv(data.frame(y,x), 
+          file = "Desktop/NSH_WI26_Rotation/SyntheticData/standardCorrelatedMinorTrain.csv", 
+          row.names=FALSE)
+
+xmat <- matrix(runif(500000, 0, 2*pi), nrow = 500, ncol = 1000)
+x <- as.data.frame(xmat)
+x1 <- x[,1]
+x2 <- x[,2]
+#Correlated predictors
+x[,3] <- (0.75*pi) + x1 + rvonmises(500, mu=0, kappa=250)
+x[,4] <- (-0.5*pi) + x2 + rvonmises(500, mu=0, kappa=250)
+x[,5] <- (-0.25*pi) + x1 + rvonmises(500, mu=0, kappa=100)
+x[,6] <- (pi/6) + x2 + rvonmises(500, mu=0, kappa=100)
+
+y <- atan2(1.4*cos(x1) - 1.1*cos(x2) + 0.8*sin(x1) + 0.9*sin(x2),
+           1.1*cos(x1) - 0.9*cos(x2) - 1.2*sin(x1) - 0.6*sin(x2)) + rvonmises(n=500, mu=circular(0), kappa=100)
+write.csv(data.frame(y,x), 
+          file = "Desktop/NSH_WI26_Rotation/SyntheticData/standardCorrelatedMinorTest.csv", 
+          row.names=FALSE)
+
