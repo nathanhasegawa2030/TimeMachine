@@ -249,24 +249,29 @@ mga.a1.plot <- mga.a1[mga.a1$r2 > 0.5,]
 mga.r2.2D <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero",
                   ylab='CV r<sup>2</sup>')
 #Same plot but for sparse models only
-mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero < 10,]
+mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero <= 13,]
+mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero >= 4,]
 mga.r2.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero",
                          ylab='CV r<sup>2</sup>')
 
 
-#Plot of lambda vs. test r^2 for MGaussian
-mga.model <- model.mgaussian$model
-mga.test.pred <- predict.mgaussian(mga.model, test[,-1])
+#Plot of lambda vs. test r^2 for MGaussian, fitting alpha = 1 model
+
+#We need to refit alpha = 1 model to full training data 
+#due to errors in earlier code
+a1.model <- refit.a1(model.mgaussian$y, model.mgaussian$x)
+mga.test.pred <- predict.mgaussian(a1.model, test[,-1])
 y.test <- rescale_angle(test[,1])
 resid2 <- function (ypred) {mean((rescale_angle(ypred - y.test))^2)}
 test.resid.mean <- sapply(mga.test.pred, resid2)
 mga.test.r2 <- 1 - test.resid.mean/(var(cos(y.test))+var(sin(y.test)))
 mga.a1$testr2 <- mga.test.r2
-mga.a1.plot <- mga.a1[mga.a1$testr2 > 0.4,]
+mga.a1.plot <- mga.a1[mga.a1$r2 > 0.5,]
 test.mga.2D <- sc2D(mga.a1.plot, xcol="loglambda", ycol="testr2", zcol="nonzero",
                     ylab='Test r<sup>2</sup>')
 #Same plot but for sparse models only
-mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero < 10,]
+mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero <= 13,]
+mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero >= 4,]
 test.mga.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="testr2", zcol="nonzero",
                            ylab='Test r<sup>2</sup>')
 
@@ -288,3 +293,4 @@ save_plotly(mga.r2.2D, folderpath, "Mgar2.png")
 save_plotly(test.mga.2D, folderpath, "MgaTestr2.png")
 save_plotly(mga.r2.2D.sparse, folderpath, "Mgar2Sparse.png")
 save_plotly(test.mga.2D.sparse, folderpath, "MgaTestr2Sparse.png")
+

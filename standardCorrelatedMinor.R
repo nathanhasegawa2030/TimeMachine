@@ -123,7 +123,7 @@ mga.p <- sc3D(mga.agg)
 #Filter by where CV r^2 is large, so that we zoom in near the top of the plot
 sin.top <- sin.agg[sin.agg$r2 > 0.7,]
 cos.top <- cos.agg[cos.agg$r2 > 0.7,]
-mga.top <- mga.agg[mga.agg$r2 > 0.75,]
+mga.top <- mga.agg[mga.agg$r2 > 0.7,]
 
 #Plot this again
 sin.ref <- sc3D(sin.top)
@@ -160,8 +160,8 @@ mga.nzr.2D <- sc2D(mga.par, zcol="nonzero")
 
 #Choose the "correct" number of terms that we want to consider. (This is 
 #synthetic data; we happen to know the correct number of terms.)
-nterms <- c(4,5)
-pct <- 0.5
+nterms <- c(4,5,6,7,8,9,10,11,12,13)
+pct <- 0.8
 
 #Compute the composite r^2's
 comp.agg <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
@@ -256,7 +256,7 @@ resid2 <- function (ypred) {mean((rescale_angle(ypred - y.test))^2)}
 test.resid.mean <- sapply(mga.test.pred, resid2)
 mga.test.r2 <- 1 - test.resid.mean/(var(cos(y.test))+var(sin(y.test)))
 mga.a1$testr2 <- mga.test.r2
-mga.a1.plot <- mga.a1[mga.a1$testr2 > 0.5,]
+mga.a1.plot <- mga.a1[mga.a1$r2 > 0.5,]
 test.mga.2D <- sc2D(mga.a1.plot, xcol="loglambda", ycol="testr2", zcol="nonzero",
                     ylab='Test r<sup>2</sup>')
 #Same plot but for sparse models only
@@ -283,3 +283,4 @@ save_plotly(mga.r2.2D, folderpath, "Mgar2.png")
 save_plotly(test.mga.2D, folderpath, "MgaTestr2.png")
 save_plotly(mga.r2.2D.sparse, folderpath, "Mgar2Sparse.png")
 save_plotly(test.mga.2D.sparse, folderpath, "MgaTestr2Sparse.png")
+

@@ -211,6 +211,7 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
   comp.cosl <- numeric(N)
   comp.r2 <- numeric(N)
   
+  #If we supply test data, predict the test results
   if (!is.null(test)) {
     y.test <- test[,1]
     x.test <- test[,-1]
@@ -218,6 +219,17 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
     cos.test <- cos(y.test)
     sin.test <- sin(y.test)
     test.r2 <- numeric(N)
+    
+    #Note that we are using the entire dataset to do test predictions—
+    #CV is not necessary
+    test.sin <- glmnet(predictors, siny, keep=T,alpha=1,family="gaussian",
+                       type.measure="deviance", 
+                       lambda=rev(10^(sin.max$loglambda)), standardize=F)
+    test.cos <- glmnet(predictors, cosy, keep=T,alpha=1,family="gaussian",
+                       type.measure="deviance", 
+                       lambda=rev(10^(cos.max$loglambda)), standardize=F)
+    sin.test.pred <- predict(test.sin, predictors.test, s=test.sin$lambda)
+    cos.test.pred <- predict(test.cos, predictors.test, s=test.cos$lambda)
   }
   
   #Iterate over the number of iterations
@@ -233,11 +245,6 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
                            nfolds=10, foldid=folds[[k]], type.measure="deviance", 
                            lambda=rev(10^(cos.max$loglambda)), standardize=F)
     
-    #If we supply test data, predict the sine and cosine of the test data
-    if (!is.null(test)) {
-      sin.test.pred <- predict(sin.model, predictors.test, s=sin.model$lambda)
-      cos.test.pred <- predict(cos.model, predictors.test, s=cos.model$lambda)
-    }
     
     #The keep=T argument ensures that the prediction for each value, when its
     #fold is missing, is stored in the matrix fit.preval. The jth row corresponds
@@ -274,6 +281,7 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
     }
     print("Iteration complete")
   }
+  
   if (!is.null(test)) {
     comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, test.r2)
     colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "testr2")
@@ -285,3 +293,126 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
   }
   comp.agg
 }
+
+comp.r2.sampling <- function(y, x, sin.agg, cos.agg, 
+                             test=NULL, nsin=100, ncos=100, a=1, Nrep=10) {
+  #Accepts as input the input data x and y, and the aggregated CV results from 
+  #circ.lm after cleaning. Returns a tibble comp.agg that contains the best pairs
+  #of values of lambda for sine and cosine (given the value of alpha) and their
+  #cross-validation r^2.
+  #If we do not care about filtering by the number of terms, we can choose
+  #nterms to be an arbitrarily large set of integers (e.g. seq(1,1000,1)).
+  #We also apply each of the models to test data and assess its performance there.
+  
+  predictors <- as.matrix(cbind(cos(x), sin(x)))
+  cosy <- cos(y)
+  siny <- sin(y)
+  
+  sin.a1 <- sin.agg[sin.agg$alpha == a,]
+  cos.a1 <- cos.agg[cos.agg$alpha == a,]
+  
+  #Generate the folds
+  set.seed(3330)
+  distn = rep(1:10, ceiling(length(y)/10))
+  folds = as.list(rep(0,Nrep))
+  for (k in 1:Nrep) {
+    folds[[k]] <- sample(distn, length(y), replace=FALSE)
+  }
+  
+  #Choose which values of lambda to test
+  sinl <- sort(sample(sin.a1$loglambda, 100, replace=FALSE))
+  cosl <- sort(sample(cos.a1$loglambda, 100, replace=FALSE))
+  sin.max <- sin.a1[sin.a1$loglambda %in% sinl,]
+  cos.max <- cos.a1[cos.a1$loglambda %in% cosl,]
+  
+  #Initialization
+  N <- length(sin.max$loglambda) * length(cos.max$loglambda)
+  comp.sinl <- numeric(N)
+  comp.cosl <- numeric(N)
+  comp.r2 <- numeric(N)
+  
+  #If we supply test data, predict the test results
+  if (!is.null(test)) {
+    y.test <- test[,1]
+    x.test <- test[,-1]
+    predictors.test <- as.matrix(cbind(cos(x.test), sin(x.test)))
+    cos.test <- cos(y.test)
+    sin.test <- sin(y.test)
+    test.r2 <- numeric(N)
+    
+    #Note that we are using the entire dataset to do test predictions—
+    #CV is not necessary
+    test.sin <- glmnet(predictors, siny, keep=T,alpha=1,family="gaussian",
+                       type.measure="deviance", 
+                       lambda=rev(10^(sin.max$loglambda)), standardize=F)
+    test.cos <- glmnet(predictors, cosy, keep=T,alpha=1,family="gaussian",
+                       type.measure="deviance", 
+                       lambda=rev(10^(cos.max$loglambda)), standardize=F)
+    sin.test.pred <- predict(test.sin, predictors.test, s=test.sin$lambda)
+    cos.test.pred <- predict(test.cos, predictors.test, s=test.cos$lambda)
+  }
+  
+  #Iterate over the number of iterations
+  for (k in 1:Nrep) {
+    
+    #Train the sin model
+    sin.model <- cv.glmnet(predictors, siny, keep=T,alpha=1,family="gaussian",
+                           nfolds=10, foldid=folds[[k]], type.measure="deviance", 
+                           lambda=rev(10^(sin.max$loglambda)), standardize=F)
+    
+    #Train the cos model
+    cos.model <- cv.glmnet(predictors, cosy, keep=T,alpha=1,family="gaussian",
+                           nfolds=10, foldid=folds[[k]], type.measure="deviance", 
+                           lambda=rev(10^(cos.max$loglambda)), standardize=F)
+    
+    
+    #The keep=T argument ensures that the prediction for each value, when its
+    #fold is missing, is stored in the matrix fit.preval. The jth row corresponds
+    #to the jth value of lambda. We use this matrix to compute the composite r^2
+    #for every pair of lambda-values.
+    
+    index = 1
+    
+    for (i in 1:length(sin.model$lambda)) {
+      sin.pred <- sin.model$fit.preval[,i]
+      for (j in 1:length(cos.model$lambda)) {
+        cos.pred <- cos.model$fit.preval[,j]
+        
+        #Compute predicted y-values
+        ypred <- atan2(sin.pred, cos.pred)
+        
+        #Compute predicted residuals
+        resid <- sapply(y - ypred, rescale_angle)
+        
+        #Update the mean CV r^2. Since we know how many trials we are averaging
+        #over, we can do this iteratively.
+        comp.sinl[index] <- sin.model$lambda[i]
+        comp.cosl[index] <- cos.model$lambda[j]
+        comp.r2[index] <- comp.r2[index] + (1 - mean(resid^2)/(var(cosy)+var(siny)))/Nrep
+        
+        #If we supply test data, compute the test r^2
+        if (!is.null(test)) {
+          test.pred <- atan2(sin.test.pred[,i], cos.test.pred[,j])
+          resid.test <- sapply(y.test - test.pred, rescale_angle)
+          test.r2[index] <- test.r2[index] + (1 - mean(resid.test^2)/(var(cos.test)+var(sin.test)))/Nrep
+        }
+        index <- index + 1
+      }
+    }
+    print("Iteration complete")
+  }
+  
+  if (!is.null(test)) {
+    comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, test.r2)
+    colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "testr2")
+    comp.agg <- aggregate3(comp.data)
+  } else {
+    comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2)
+    colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2")
+    comp.agg <- aggregate2(comp.data)
+  }
+  comp.agg
+}
+
+
+

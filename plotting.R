@@ -43,8 +43,7 @@ angle_plot <- function(circData, ccol = "#c9cfd4", pcol = "#007fff",
     ylim(-1.1,1.1) +
     labs(title = title) +
     theme_void() +
-    theme(plot.title=element_text(hjust = 0.5,family="Trebuchet MS", size = 22,
-                                  margin = margin(b = -15, unit = "pt")),
+    theme(plot.title=element_text(hjust = 0.5,family="Trebuchet MS", size = 22),
           plot.background = element_rect(fill = "white", color = NA),
           panel.background = element_rect(fill = "white", color = NA),
           aspect.ratio=1,
@@ -197,6 +196,67 @@ sc2D <- function(data, xcol="loglambda", ycol="alpha", zcol="r2",
   p
 }
 
+#This helper function plots a KDE histogram of the test residuals for the 
+#standard and simultaneous approaches. 
+residual_hist <- function(resid, mga.resid) {
+  data1 <- resid
+  data2 <- mga.resid
+  df <- data.frame(data1, data2)
+  colnames(df) <- c("c1", "c2")
+  
+  ggplot(df) + 
+    # Map color to a string label inside aes()
+    geom_density(aes(x=c1, color="Standard"), linewidth=2, key_glyph = "point", adjust=0.5) +
+    geom_density(aes(x=c2, color="Simultaneous"), linewidth=2, key_glyph = "point", adjust=0.5) + 
+    labs(x="Circular Residual", y="Density", color="Legend") +
+    scale_color_manual(values = c("Standard" = "#007fff", "Simultaneous" = "#fd1900")) +
+    guides(color = guide_legend(override.aes = list(shape = 16, size = 6.25, linetype=0))) +
+    theme_void() +
+    theme(
+      axis.title.y = element_text(family = "Trebuchet MS", size = 24, angle = 90, margin = ggplot2::margin(r = 6)),
+      axis.title.x = element_text(family = "Trebuchet MS", size = 24, margin = ggplot2::margin(t = 6)),
+      axis.text.x = element_text(family = "Trebuchet MS", size = 19, margin = ggplot2::margin(t = 5)),
+      axis.text.y = element_text(family = "Trebuchet MS", size = 19, angle = 0, margin = ggplot2::margin(r = 5)),
+      axis.line = element_line(color = "black", linewidth=1.5),
+      legend.position = c(1.1, 1),  
+      legend.justification = c("right", "top"),
+      legend.key = element_blank(),
+      legend.background = element_blank(), 
+      legend.text = element_text(family = "Trebuchet MS", size = 19),
+      legend.title = element_blank(),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      aspect.ratio=0.62,
+      plot.margin = unit(c(0.2, 0.6, 0.2, 0.1), "inches")
+    )
+}
+
+single_hist <- function(data1, xlab, col="#007fff", nbins=74) {
+  df <- data.frame(data1)
+  colnames(df) <- c("c1")
+  
+  ggplot(df) + 
+    # Map color to a string label inside aes()
+    geom_histogram(aes(x=c1, y=after_stat(density)), bins=nbins, 
+                   fill=col, key_glyph = "point") +
+    labs(x=xlab, y="Density") +
+    scale_x_continuous(limits = c(-pi, pi), expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_void() +
+    theme(
+      axis.ticks = element_line(color = "black", linewidth = 1),
+      axis.ticks.length = unit(0.15, "cm"),
+      axis.title.y = element_text(family = "Trebuchet MS", size = 30, angle = 90, margin = ggplot2::margin(r = 6)),
+      axis.title.x = element_text(family = "Trebuchet MS", size = 30, margin = ggplot2::margin(t = 6)),
+      axis.text.x = element_text(family = "Trebuchet MS", size = 24, margin = ggplot2::margin(t = 5)),
+      axis.text.y = element_text(family = "Trebuchet MS", size = 24, angle = 0, margin = ggplot2::margin(r = 5)),
+      axis.line = element_line(color = "black", linewidth=1.5),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      aspect.ratio=0.3,
+      plot.margin = unit(c(0.2, 0.6, 0.2, 0.1), "inches")
+    )
+}
 
 #This helper function was written by Google Gemini and shifts angles to (-pi,pi].
 rescale_angle <- function(angle) {
