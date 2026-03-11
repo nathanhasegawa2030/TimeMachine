@@ -367,6 +367,22 @@ ggsave(filename="UnregularizedResiduals.png", plot = urh,
        path = folderpath,
        width=10, height=5.625, units="in")
 
+#Compute median absolute error
+std.mae <- median(abs(resid))
+std.unreg.mae <- median(abs(unreg.resid))
+mga.mae <- median(abs(mga.resid))
+mga.unreg.mae <- median(abs(mga.unreg.resid))
+
+#Scatterplot of predicted versus true values
+std.response.p <- response_scatter(y.test,ypred,pcol="#007fff")
+mga.response.p <- response_scatter(y.test, mga.test.pred, pcol="#fd1900")
+ggsave(filename="StandardResponsePlot.png", plot = std.response.p,
+       path = folderpath,
+       width=6, height=7.5, units="in")
+ggsave(filename="SimultaneousResponsePlot.png", plot = mga.response.p,
+       path = folderpath,
+       width=6, height=7.5, units="in")
+
 
 #Export the plotly plots
 save_plotly(sin.nzr.2D, folderpath, "SinNonzero.png")

@@ -330,6 +330,8 @@ comp.r2.sampling <- function(y, x, sin.agg, cos.agg,
   comp.sinl <- numeric(N)
   comp.cosl <- numeric(N)
   comp.r2 <- numeric(N)
+  comp.amse <- numeric(N) #Angular mean squared error
+  comp.asd <- numeric(N) #Sample SD of angular mean squared error
   
   #If we supply test data, predict the test results
   if (!is.null(test)) {

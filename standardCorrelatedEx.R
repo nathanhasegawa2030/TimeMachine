@@ -280,6 +280,7 @@ mga.r2.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero
 
 #We need to refit alpha = 1 model to full training data 
 #due to errors in earlier code
+
 a1.model <- refit.a1(model.mgaussian$y, model.mgaussian$x)
 mga.test.pred <- predict.mgaussian(a1.model, test[,-1])
 y.test <- rescale_angle(test[,1])
@@ -349,13 +350,13 @@ ggsave(filename="ResponseHist.png", plot = rdist,
 #want to see how bad this can get.
 
 #Start with standard approach
-unreg.pred <- atan2(predict(sin.a1.model, test.predictors, s=min(sin.a1.model$lambda)),
-                    predict(cos.a1.model, test.predictors, s=min(cos.a1.model$lambda)))
+unreg.pred <- atan2(predict(sin.a1.model, test.predictors, s=0),
+                    predict(cos.a1.model, test.predictors, s=0))
 unreg.resid <- rescale_angle(y.test - unreg.pred)
 std.unregr2 <- 1 - (mean(unreg.resid^2) / (var(sin(y.test)) + var(cos(y.test))))
 
 #Now do same for mgaussian approach
-mga.unreg.pred <- predict.mgaussian(a1.model, xtest[,-1], s=min(a1.model$lambda))
+mga.unreg.pred <- predict.mgaussian(a1.model, test[,-1], s=0)
 mga.unreg.resid <- rescale_angle(mga.unreg.pred[[1]] - test[,1])
 mga.unregr2 <- 1 - (mean(mga.unreg.resid^2) / (var(sin(y.test)) + var(cos(y.test))))
 
@@ -371,6 +372,25 @@ std.unreg.mae <- median(abs(unreg.resid))
 mga.mae <- median(abs(mga.resid))
 mga.unreg.mae <- median(abs(mga.unreg.resid))
 
+#Scatterplot of predicted versus true values
+std.response.p <- response_scatter(y.test,ypred,pcol="#007fff")
+mga.response.p <- response_scatter(y.test, mga.test.pred, pcol="#fd1900")
+ggsave(filename="StandardResponsePlot.png", plot = std.response.p,
+       path = folderpath,
+       width=6, height=7.5, units="in")
+ggsave(filename="SimultaneousResponsePlot.png", plot = mga.response.p,
+       path = folderpath,
+       width=6, height=7.5, units="in")
+
+#Same but for unregularized models
+std.response.unreg.p <- response_scatter(y.test, unreg.pred, pcol="#007fff")
+mga.response.unreg.p <- response_scatter(y.test, mga.unreg.pred, pcol="#fd1900")
+ggsave(filename="StandardUnregResponsePlot.png", plot = std.response.unreg.p,
+       path = folderpath,
+       width=6, height=7.5, units="in")
+ggsave(filename="SimultaneousUnregResponsePlot.png", plot = mga.response.unreg.p,
+       path = folderpath,
+       width=6, height=7.5, units="in")
 
 #Export the plotly plots
 save_plotly(sin.nzr.2D, folderpath, "SinNonzero.png")

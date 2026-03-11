@@ -258,6 +258,48 @@ single_hist <- function(data1, xlab, col="#007fff", nbins=74) {
     )
 }
 
+#This function plots a scatterplot of the actual vs. predicted responses.
+response_scatter <- function(data1, data2, pcol) {
+  df <- data.frame(data1, data2)
+  colnames(df) <- c("c1", "c2")
+  
+  #Shift points in upper left corner down by 2pi units for viewability
+  ul_rows <- which(df$c2 > pi + df$c1)
+  df$c2[ul_rows] <- df$c2[ul_rows] - (2*pi);
+  
+  #Shift points in lower right corner up by 2pi units for viewability
+  br_rows <- which(df$c2 < df$c1 - pi)
+  df$c2[br_rows] <- df$c2[br_rows] + (2*pi);
+  
+  pi_labels <- c("-\u03c0", "-\u03c0/2", "0", "\u03c0/2", "\u03c0")
+  p <- ggplot(df) +
+    geom_point(aes(x = c1, y = c2), color = pcol, size=3, alpha=0.2) +
+    geom_segment(aes(x = -pi, y = -pi, xend = pi, yend = pi), 
+                 color = "black", size = 1.5, alpha=1, linetype=2) +
+    scale_x_continuous(
+      breaks = c(-pi, -pi/2, 0, pi/2, pi),
+      labels = pi_labels) +
+    scale_y_continuous(
+      breaks = c(-pi, -pi/2, 0, pi/2, pi),
+      labels = pi_labels) +
+    labs(x="Actual Response",
+         y="Predicted Response") +
+    theme_void() +
+    theme(axis.title.y = element_text(family = "Trebuchet MS", size = 24, angle = 90, margin = ggplot2::margin(r = 6)),
+          axis.title.x = element_text(family = "Trebuchet MS", size = 24, margin = ggplot2::margin(t = 6)),
+          axis.text.x = element_text(family = "Trebuchet MS", size = 19, margin = ggplot2::margin(t = 5)),
+          axis.text.y = element_text(hjust = 1, family = "Trebuchet MS", size = 19, angle = 0, margin = ggplot2::margin(r = 5)),
+          axis.ticks.x = element_line(color = "black", linewidth = 0.5),
+          axis.ticks.y = element_line(color = "black", linewidth = 0.5),
+          axis.ticks.length = unit(5, "pt"),
+          axis.line = element_line(color = "black", linewidth=1.5),
+          plot.background = element_rect(fill = "white", color = NA),
+          panel.background = element_rect(fill = "white", color = NA),
+          aspect.ratio=1,
+          plot.margin = unit(c(.05,.05,.05,.05), "inches"))
+  p
+}
+
 #This helper function was written by Google Gemini and shifts angles to (-pi,pi].
 rescale_angle <- function(angle) {
   angle <- angle %% (2 * pi) # Wrap to [0, 2*pi)

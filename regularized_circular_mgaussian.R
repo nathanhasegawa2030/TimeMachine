@@ -74,7 +74,7 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10,
       cv.rep[index:(index+nl_used-1)] = j
       cv.mse[index:(index+nl_used-1)] = model$cvm
       
-      #Note: when computing r^2, we use the fitted values for Y,
+      #Note: when computing r^2, we use the fitted values for y,
       #not cos(y) and sin(y)
       
       #Compute r^2 for each lambda
@@ -150,10 +150,10 @@ predict.mgaussian <- function(model, newx, s=model$lambda) {
   #Accepts as input an output a new set of ANGULAR predictors (not cosines and
   #sines) and returns the angular responses predicted by the model. 
   predictors <- as.matrix(cbind(cos(newx), sin(newx)))
-  pred <- predict(model, predictors, s=s)
   out <- as.list(numeric(length(s)))
   for (i in 1:length(s)) {
-    out[[i]] <- atan2(pred[,,i][,2], pred[,,i][,1])
+    pred <- predict(model, predictors, s=s[i])
+    out[[i]] <- atan2(pred[,,1][,2], pred[,,1][,1])
   }
   out
 }
