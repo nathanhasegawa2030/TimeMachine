@@ -259,31 +259,32 @@ single_hist <- function(data1, xlab, col="#007fff", nbins=74) {
 }
 
 #This function plots a scatterplot of the actual vs. predicted responses.
-response_scatter <- function(data1, data2, pcol) {
+response_scatter <- function(data1, data2, pcol, xlab="Actual Response",
+                             ylab="Predicted Response") {
   df <- data.frame(data1, data2)
   colnames(df) <- c("c1", "c2")
   
-  #Shift points in upper left corner down by 2pi units for viewability
-  ul_rows <- which(df$c2 > pi + df$c1)
-  df$c2[ul_rows] <- df$c2[ul_rows] - (2*pi);
-  
-  #Shift points in lower right corner up by 2pi units for viewability
-  br_rows <- which(df$c2 < df$c1 - pi)
-  df$c2[br_rows] <- df$c2[br_rows] + (2*pi);
+  if (xlab == "Actual Response" & ylab == "Predicted Response") {
+    #Shift points in upper left corner down by 2pi units for viewability
+    ul_rows <- which(df$c2 > pi + df$c1)
+    df$c2[ul_rows] <- df$c2[ul_rows] - (2*pi);
+    
+    #Shift points in lower right corner up by 2pi units for viewability
+    br_rows <- which(df$c2 < df$c1 - pi)
+    df$c2[br_rows] <- df$c2[br_rows] + (2*pi);
+  }
   
   pi_labels <- c("-\u03c0", "-\u03c0/2", "0", "\u03c0/2", "\u03c0")
   p <- ggplot(df) +
     geom_point(aes(x = c1, y = c2), color = pcol, size=3, alpha=0.2) +
-    geom_segment(aes(x = -pi, y = -pi, xend = pi, yend = pi), 
-                 color = "black", size = 1.5, alpha=1, linetype=2) +
     scale_x_continuous(
       breaks = c(-pi, -pi/2, 0, pi/2, pi),
       labels = pi_labels) +
     scale_y_continuous(
       breaks = c(-pi, -pi/2, 0, pi/2, pi),
       labels = pi_labels) +
-    labs(x="Actual Response",
-         y="Predicted Response") +
+    labs(x=xlab,
+         y=ylab) +
     theme_void() +
     theme(axis.title.y = element_text(family = "Trebuchet MS", size = 24, angle = 90, margin = ggplot2::margin(r = 6)),
           axis.title.x = element_text(family = "Trebuchet MS", size = 24, margin = ggplot2::margin(t = 6)),
@@ -296,7 +297,17 @@ response_scatter <- function(data1, data2, pcol) {
           plot.background = element_rect(fill = "white", color = NA),
           panel.background = element_rect(fill = "white", color = NA),
           aspect.ratio=1,
-          plot.margin = unit(c(.05,.05,.05,.05), "inches"))
+          plot.margin = unit(c(.05,.05,.05,.05), "inches")) +
+    if (xlab == "Actual Response" && ylab == "Predicted Response") {
+      geom_segment(aes(x = -pi, y = -pi, xend = pi, yend = pi), 
+                   color = "black", size = 1.5, alpha=1, linetype=2)
+    } else {
+      geom_segment(aes(x = -pi, y = 0, xend = pi, yend = 0), 
+                   color = "black", size = 1.5, alpha=1, linetype=2)
+    }
+  if (ylab == "Circular Residual") {
+    p <- p + ylim(c(-2*pi/3,2*pi/3))
+  }
   p
 }
 
@@ -326,11 +337,23 @@ aggregate2 <- function(df, x=sinloglambda, y=cosloglambda, z=r2) {
 }
 
 #This helper function does the same, for trying to find the composite and test r^2
-aggregate3 <- function(df, x=sinloglambda, y=cosloglambda, z1=r2, z2=testr2) {
+aggregate3 <- function(df, x=sinloglambda, y=cosloglambda, z1=r2, z2=angMSE, z3=angStdErr, z4=testr2) {
   agg <- df %>%
     group_by({{x}}, {{y}}) %>%
     summarize("{{z1}}" := mean({{z1}}, na.rm = TRUE), 
               "{{z2}}" := mean({{z2}}, na.rm = TRUE),
+              "{{z3}}" := mean({{z3}}, na.rm = TRUE),
+              "{{z4}}" := mean({{z4}}, na.rm = TRUE),
+              .groups = 'drop')
+}
+
+aggregate4 <- function(df, x=loglambda, y=alpha, z1=r2, z2=nonzero, z3=angMSE, z4=angStdErr) {
+  agg <- df %>%
+    group_by({{x}}, {{y}}) %>%
+    summarize("{{z1}}" := mean({{z1}}, na.rm = TRUE), 
+              "{{z2}}" := mean({{z2}}, na.rm = TRUE),
+              "{{z3}}" := mean({{z3}}, na.rm = TRUE),
+              "{{z4}}" := mean({{z4}}, na.rm = TRUE),
               .groups = 'drop')
 }
 

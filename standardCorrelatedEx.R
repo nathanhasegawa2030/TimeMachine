@@ -26,7 +26,7 @@ ggsave(filename="ResponseDistribution.png", plot = p,
        width=6,height=6,units="in")
 
 #Fit both models
-alpha = seq(0.5,1,0.05)
+alpha = 1
 model.standard <- circ.lm(y,x,a=alpha)
 model.mgaussian <- circ.lm.mgaussian(y,x,a=alpha)
 
@@ -164,55 +164,55 @@ nterms <- c(4,5)
 pct <- 0.9 #Should be lower but this speeds things up
 
 #Compute the composite r^2's
-comp.agg <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
-                    nterms, pct)
-
-#Plot points in blue where the cosine and sine lambdas are equal. These are the
-#models that the Mgaussian approach would select from
-# minl <- max(min(comp.agg$sinloglambda), min(comp.agg$cosloglambda))
-# maxl <- min(max(comp.agg$sinloglambda), max(comp.agg$cosloglambda))
-# minz <- min(comp.agg$r2)
-# maxz <- max(comp.agg$r2)
-# x <- c(minl, minl, maxl, maxl)
-# y <- c(minl, minl, maxl, maxl)
-# z <- c(minz, maxz, maxz, minz)
-# bluept <- data.frame(x,y,z)
-
-#3D plot of CV r^2 for the composite model
-
-comp.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
-                  xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
-                  ylab='log<sub>10</sub>(λ<sub>cos</sub>)')
-
-
-#Now plot the test r^2 too
-test.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
-                  zcol="testr2",
-                  xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
-                  ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
-                  zlab='Test r<sup>2</sup>')
-
-#Now do the same for the overfit models
-nterms <- seq(1,2*dim(model.standard$x)[2],1)
-pct <- 0.995 #Should be 0.95 but this is to speed things up
-comp.overfit <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
-                        nterms, pct)
-
-#3D plot of CV r^2 for the overfit models
-comp.overfit.r2.p <- sc3D(comp.overfit, xcol="sinloglambda", ycol="cosloglambda",
-                          xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
-                          ylab='log<sub>10</sub>(λ<sub>cos</sub>)')
-
-#Same for test r^2
-test.overfit.r2.p <- sc3D(comp.overfit, xcol="sinloglambda", ycol="cosloglambda",
-                          zcol="testr2",
-                          xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
-                          ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
-                          zlab='Test r<sup>2</sup>')
-
-#Do this again for the standard approach, but this time instead of searching for
-#the best model, we will sample uniformly at random from among all sine models
-#and all cosine models.
+# comp.agg <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
+#                     nterms, pct)
+# 
+# #Plot points in blue where the cosine and sine lambdas are equal. These are the
+# #models that the Mgaussian approach would select from
+# # minl <- max(min(comp.agg$sinloglambda), min(comp.agg$cosloglambda))
+# # maxl <- min(max(comp.agg$sinloglambda), max(comp.agg$cosloglambda))
+# # minz <- min(comp.agg$r2)
+# # maxz <- max(comp.agg$r2)
+# # x <- c(minl, minl, maxl, maxl)
+# # y <- c(minl, minl, maxl, maxl)
+# # z <- c(minz, maxz, maxz, minz)
+# # bluept <- data.frame(x,y,z)
+# 
+# #3D plot of CV r^2 for the composite model
+# 
+# comp.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
+#                   xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+#                   ylab='log<sub>10</sub>(λ<sub>cos</sub>)')
+# 
+# 
+# #Now plot the test r^2 too
+# test.r2.p <- sc3D(comp.agg, xcol="sinloglambda", ycol="cosloglambda",
+#                   zcol="testr2",
+#                   xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+#                   ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
+#                   zlab='Test r<sup>2</sup>')
+# 
+# #Now do the same for the overfit models
+# nterms <- seq(1,2*dim(model.standard$x)[2],1)
+# pct <- 0.995 #Should be 0.95 but this is to speed things up
+# comp.overfit <- comp.r2(model.standard$y, model.standard$x, sin.agg, cos.agg, test,
+#                         nterms, pct)
+# 
+# #3D plot of CV r^2 for the overfit models
+# comp.overfit.r2.p <- sc3D(comp.overfit, xcol="sinloglambda", ycol="cosloglambda",
+#                           xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+#                           ylab='log<sub>10</sub>(λ<sub>cos</sub>)')
+# 
+# #Same for test r^2
+# test.overfit.r2.p <- sc3D(comp.overfit, xcol="sinloglambda", ycol="cosloglambda",
+#                           zcol="testr2",
+#                           xlab='log<sub>10</sub>(λ<sub>sin</sub>)',
+#                           ylab='log<sub>10</sub>(λ<sub>cos</sub>)',
+#                           zlab='Test r<sup>2</sup>')
+# 
+# #Do this again for the standard approach, but this time instead of searching for
+# #the best model, we will sample uniformly at random from among all sine models
+# #and all cosine models.
 
 comp.agg.sampled <- comp.r2.sampling(model.standard$y, model.standard$x, 
                                      sin.agg, cos.agg, test, nsin=100,
@@ -233,26 +233,26 @@ test.r2.p.sampled <- sc3D(comp.agg.sampled, xcol="sinloglambda", ycol="cosloglam
 
 
 #2D versions of the above plots
+# 
+# comp.r2.2D <- sc2D(comp.agg, xcol="cosloglambda", ycol="sinloglambda",
+#                    xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+#                    ylab='log<sub>10</sub>(λ<sub>sin</sub>)')
+# 
+# test.r2.2D <- sc2D(comp.agg, xcol="cosloglambda", ycol="sinloglambda",
+#                    zcol="testr2",
+#                    xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+#                    ylab='log<sub>10</sub>(λ<sub>sin</sub>)',
+#                    zlab='Test r<sup>2</sup>')
 
-comp.r2.2D <- sc2D(comp.agg, xcol="cosloglambda", ycol="sinloglambda",
-                   xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
-                   ylab='log<sub>10</sub>(λ<sub>sin</sub>)')
-
-test.r2.2D <- sc2D(comp.agg, xcol="cosloglambda", ycol="sinloglambda",
-                   zcol="testr2",
-                   xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
-                   ylab='log<sub>10</sub>(λ<sub>sin</sub>)',
-                   zlab='Test r<sup>2</sup>')
-
-comp.overfit.2D <- sc2D(comp.overfit, xcol="cosloglambda", ycol="sinloglambda",
-                        xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
-                        ylab='log<sub>10</sub>(λ<sub>sin</sub>)')
-
-test.overfit.2D <- sc2D(comp.overfit, xcol="cosloglambda", ycol="sinloglambda",
-                        zcol="testr2",
-                        xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
-                        ylab='log<sub>10</sub>(λ<sub>sin</sub>)',
-                        zlab='Test r<sup>2</sup>')
+# comp.overfit.2D <- sc2D(comp.overfit, xcol="cosloglambda", ycol="sinloglambda",
+#                         xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+#                         ylab='log<sub>10</sub>(λ<sub>sin</sub>)')
+# 
+# test.overfit.2D <- sc2D(comp.overfit, xcol="cosloglambda", ycol="sinloglambda",
+#                         zcol="testr2",
+#                         xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
+#                         ylab='log<sub>10</sub>(λ<sub>sin</sub>)',
+#                         zlab='Test r<sup>2</sup>')
 
 comp.sampled.2D <- sc2D(comp.agg.sampled, xcol="cosloglambda", ycol="sinloglambda",
                         xlab='log<sub>10</sub>(λ<sub>cos</sub>)',
@@ -266,7 +266,7 @@ test.sampled.2D <- sc2D(comp.agg.sampled, xcol="cosloglambda", ycol="sinloglambd
 
 #Plot of lambda vs. composite r^2 for MGaussian. Here we use the entire range of
 #lambda's, since there aren't that many, and prediction is fast.
-mga.a1 <- aggregate(mga.data[mga.data$alpha == 1,])
+mga.a1 <- aggregate4(mga.data[mga.data$alpha == 1,])
 mga.a1.plot <- mga.a1[mga.a1$r2 > 0.5,]
 mga.r2.2D <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero",
                   ylab='CV r<sup>2</sup>')
@@ -276,11 +276,8 @@ mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero >= 4,]
 mga.r2.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="r2", zcol="nonzero",
                          ylab='CV r<sup>2</sup>')
 
-#Plot of lambda vs. test r^2 for MGaussian, fitting alpha = 1 model
-
 #We need to refit alpha = 1 model to full training data 
 #due to errors in earlier code
-
 a1.model <- refit.a1(model.mgaussian$y, model.mgaussian$x)
 mga.test.pred <- predict.mgaussian(a1.model, test[,-1])
 y.test <- rescale_angle(test[,1])
@@ -297,8 +294,25 @@ mga.a1.plot <- mga.a1.plot[mga.a1.plot$nonzero >= 4,]
 test.mga.2D.sparse <- sc2D(mga.a1.plot, xcol="loglambda", ycol="testr2", zcol="nonzero",
                            ylab='Test r<sup>2</sup>')
 
+
+#Compute lambda.1se vector for standard approach
+minl = comp.agg.sampled[which.min(comp.agg.sampled$angMSE),]
+se_rule = minl$angMSE + minl$angStdErr
+
+#Find all rows with MSE less than or equal to the 1SE rule
+mse.inrange <- comp.agg.sampled[comp.agg.sampled$angMSE < se_rule,]
+
+#Among these, filter to where the loglambdas are within 0.01 of each
+#other. This is to ensure that we are not over-regularizing one component.
+#mse.inrange <- mse.inrange[abs(mse.inrange$sinloglambda - mse.inrange$cosloglambda) < 0.01,]
+
+#Among these, choose the one with the largest 2-norm of the lambdas
+lambda.norms <- (10^mse.inrange$sinloglambda)^2 + (10^mse.inrange$cosloglambda)^2
+
+
 #Compute residuals for best composite model (by test r^2)
-best.row <- comp.agg.sampled[which.max(comp.agg.sampled$testr2),]
+#best.row <- mse.inrange[which.max(lambda.norms),]
+best.row = comp.agg.sampled[which.max(comp.agg.sampled$testr2),]
 
 #Note that we have to refit the models to the entire dataset because test r^2 is
 #10-fold CV models (i.e. 10% of the data was hidden)
@@ -317,8 +331,18 @@ resid <- rescale_angle(y.test - ypred)
 
 std.testr2 <- 1 - (mean(resid^2) / (var(sin(y.test)) + var(cos(y.test))))
 
+#Compute lambda.1se vector for simultaneous approach
+minl = mga.a1[which.min(mga.a1$angMSE),]
+se_rule = minl$angMSE + minl$angStdErr
 
-#Compute residuals for best mgaussian model (by test r^2)
+#Find all rows with MSE less than or equal to the 1SE rule
+mse.inrange <- mga.a1[mga.a1$angMSE < se_rule,]
+
+#Of these, choose the one with the largest lambda
+ind.lmax <- which.max(mse.inrange$loglambda)
+
+#Compute residuals for this model
+#best.row <- mse.inrange[ind.lmax,]
 best.row <- mga.a1[which.max(mga.a1$testr2),]
 mga.test.pred <- predict.mgaussian(a1.model, test[,-1], s=10^(best.row$loglambda))
 mga.resid <- rescale_angle(mga.test.pred[[1]] - test[,1])
@@ -373,24 +397,36 @@ mga.mae <- median(abs(mga.resid))
 mga.unreg.mae <- median(abs(mga.unreg.resid))
 
 #Scatterplot of predicted versus true values
-std.response.p <- response_scatter(y.test,ypred,pcol="#007fff")
-mga.response.p <- response_scatter(y.test, mga.test.pred, pcol="#fd1900")
+std.response.p <- response_scatter(rescale_angle(y.test),ypred,pcol="#007fff")
+mga.response.p <- response_scatter(rescale_angle(y.test), mga.test.pred, pcol="#fd1900")
 ggsave(filename="StandardResponsePlot.png", plot = std.response.p,
        path = folderpath,
-       width=6, height=7.5, units="in")
+       width=6, height=6, units="in")
 ggsave(filename="SimultaneousResponsePlot.png", plot = mga.response.p,
        path = folderpath,
-       width=6, height=7.5, units="in")
+       width=6, height=6, units="in")
 
 #Same but for unregularized models
-std.response.unreg.p <- response_scatter(y.test, unreg.pred, pcol="#007fff")
-mga.response.unreg.p <- response_scatter(y.test, mga.unreg.pred, pcol="#fd1900")
+std.response.unreg.p <- response_scatter(rescale_angle(y.test), unreg.pred, pcol="#007fff")
+mga.response.unreg.p <- response_scatter(rescale_angle(y.test), mga.unreg.pred, pcol="#fd1900")
 ggsave(filename="StandardUnregResponsePlot.png", plot = std.response.unreg.p,
        path = folderpath,
-       width=6, height=7.5, units="in")
+       width=6, height=6, units="in")
 ggsave(filename="SimultaneousUnregResponsePlot.png", plot = mga.response.unreg.p,
        path = folderpath,
-       width=6, height=7.5, units="in")
+       width=6, height=6, units="in")
+
+#Scatterplot of residuals versus predicted response
+std.resid.p <- response_scatter(ypred, resid, pcol="#007fff", 
+                                xlab="Predicted Response", ylab="Circular Residual")
+mga.resid.p <- response_scatter(mga.test.pred[[1]], mga.resid, pcol="#fd1900", 
+                                xlab="Predicted Response", ylab="Circular Residual")
+ggsave(filename="StandardRegResid.png", plot = std.resid.p,
+       path = folderpath,
+       width=6, height=6, units="in")
+ggsave(filename="SimultaneousRegResid.png", plot = mga.resid.p,
+       path = folderpath,
+       width=6, height=6, units="in")
 
 #Export the plotly plots
 save_plotly(sin.nzr.2D, folderpath, "SinNonzero.png")

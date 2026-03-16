@@ -285,7 +285,7 @@ comp.r2 <- function(y, x, sin.agg, cos.agg, test=NULL, nterms=seq(1,1000,1), pct
   if (!is.null(test)) {
     comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, test.r2)
     colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "testr2")
-    comp.agg <- aggregate3(comp.data)
+    comp.agg <- aggregate2(comp.data)
   } else {
     comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2)
     colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2")
@@ -331,7 +331,7 @@ comp.r2.sampling <- function(y, x, sin.agg, cos.agg,
   comp.cosl <- numeric(N)
   comp.r2 <- numeric(N)
   comp.amse <- numeric(N) #Angular mean squared error
-  comp.asd <- numeric(N) #Sample SD of angular mean squared error
+  comp.aserr <- numeric(N) #Sample SD of angular mean squared error
   
   #If we supply test data, predict the test results
   if (!is.null(test)) {
@@ -390,6 +390,8 @@ comp.r2.sampling <- function(y, x, sin.agg, cos.agg,
         #over, we can do this iteratively.
         comp.sinl[index] <- sin.model$lambda[i]
         comp.cosl[index] <- cos.model$lambda[j]
+        comp.amse[index] <- comp.amse[index] + mean(resid^2)/Nrep
+        comp.aserr[index] <- comp.aserr[index] + sd(resid^2)/(Nrep*sqrt(10))
         comp.r2[index] <- comp.r2[index] + (1 - mean(resid^2)/(var(cosy)+var(siny)))/Nrep
         
         #If we supply test data, compute the test r^2
@@ -405,12 +407,12 @@ comp.r2.sampling <- function(y, x, sin.agg, cos.agg,
   }
   
   if (!is.null(test)) {
-    comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, test.r2)
-    colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "testr2")
+    comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, comp.amse, comp.aserr, test.r2)
+    colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "angMSE", "angStdErr", "testr2")
     comp.agg <- aggregate3(comp.data)
   } else {
-    comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2)
-    colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2")
+    comp.data <- data.frame(log10(comp.sinl), log10(comp.cosl), comp.r2, comp.amse, comp.aserr)
+    colnames(comp.data) <- c("sinloglambda", "cosloglambda", "r2", "angMSE", "angStdErr")
     comp.agg <- aggregate2(comp.data)
   }
   comp.agg

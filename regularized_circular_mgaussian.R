@@ -42,6 +42,8 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10,
   cv.rep <- numeric(Nrep * nl * num_a)
   cv.mse <- numeric(Nrep * nl * num_a)
   cv.r2 <- numeric(Nrep * nl * num_a)
+  cv.amse <- numeric(Nrep * nl * num_a)
+  cv.aserr <- numeric(Nrep * nl * num_a)
   cv.n0 <- numeric(Nrep * nl * num_a)
   index = 1
   
@@ -79,12 +81,18 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10,
       
       #Compute r^2 for each lambda
       local.r2 <- numeric(nl_used)
+      local.amse <- numeric(nl_used)
+      local.aserr <- numeric(nl_used)
       for (k in 1:nl_used) {
         ypred <- atan2(model$fit.preval[,,k][,2], model$fit.preval[,,k][,1])
         resid <- rescale_angle(y - ypred)
+        local.amse[k] <- mean(resid^2)
+        local.aserr[k] <- sd(resid)/sqrt(10)
         local.r2[k] <- 1 - (mean(resid^2) / (var(cosy) + var(siny)))
       }
       cv.r2[index:(index+nl_used-1)] = local.r2
+      cv.amse[index:(index+nl_used-1)] = local.amse
+      cv.aserr[index:(index+nl_used-1)] = local.aserr
       cv.n0[index:(index+nl_used-1)] = model$nzero
       index = index + nl_used
     }
@@ -98,9 +106,12 @@ circ.lm.mgaussian <- function(y, x, a=seq(0,1,0.1), Nrep=10,
   cv.rep = cv.rep[1:z]
   cv.mse = cv.mse[1:z]
   cv.r2 = cv.r2[1:z]
+  cv.amse = cv.amse[1:z]
+  cv.aserr = cv.aserr[1:z]
   cv.n0 = cv.n0[1:z]
-  cv.data <- data.frame(cv.al, cv.la, log10(cv.la), cv.rep, cv.mse, cv.r2, cv.n0)
-  colnames(cv.data) <- c("alpha", "lambda", "loglambda", "rep", "mse", "r2", "nonzero")
+  cv.data <- data.frame(cv.al, cv.la, log10(cv.la), cv.rep, cv.mse, cv.r2,
+                        cv.amse, cv.aserr, cv.n0)
+  colnames(cv.data) <- c("alpha", "lambda", "loglambda", "rep", "mse", "r2", "angMSE", "angStdErr", "nonzero")
   
   #Find the optimal alpha and lambda values for the cosine and sine model
   amax <- cv.al[which(cv.r2 == max(cv.r2))[1]]
